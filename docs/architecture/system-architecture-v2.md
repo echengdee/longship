@@ -418,7 +418,9 @@ safe-state time  = t4 - t0
 These differences are valid only after all timestamps are expressed in one
 declared monotonic clock domain, or in synchronized domains with a recorded
 worst-case clock-error bound. `ControlCommandResult` records the clock domain,
-relation, error bound, and the Safety-resolved stop profile. Unsynchronized
+relation, error bound, and the Safety-resolved stop profile. Only a qualified
+Safety Kernel or target monitor may verify measured motion cessation or a safe
+state, and those result phases use the local Safety path. Unsynchronized
 timestamps remain useful as ordered local evidence but cannot support
 cross-process latency subtraction.
 

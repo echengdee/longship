@@ -302,7 +302,22 @@
       ],
       "properties": {
         "verifier": {
-          "$ref": "#/$defs/source"
+          "allOf": [
+            {
+              "$ref": "#/$defs/source"
+            },
+            {
+              "properties": {
+                "authority": {
+                  "enum": [
+                    "safety_kernel",
+                    "target_monitor"
+                  ]
+                }
+              }
+            }
+          ],
+          "description": "Only qualified local Safety or target-observation authority may verify a measured effect."
         },
         "criterion_profile_id": {
           "$ref": "#/$defs/id"
@@ -343,12 +358,16 @@
         },
         "stop_timing": {
           "type": "null"
+        },
+        "processing_path": {
+          "const": "deterministic_runtime"
         }
       },
       "required": [
         "request_kind",
         "phase",
-        "stop_timing"
+        "stop_timing",
+        "processing_path"
       ]
     },
     {
@@ -365,12 +384,16 @@
         },
         "stop_timing": {
           "type": "null"
+        },
+        "processing_path": {
+          "const": "local_safety"
         }
       },
       "required": [
         "request_kind",
         "phase",
-        "stop_timing"
+        "stop_timing",
+        "processing_path"
       ]
     },
     {
@@ -401,13 +424,17 @@
               }
             }
           ]
+        },
+        "processing_path": {
+          "const": "local_safety"
         }
       },
       "required": [
         "request_kind",
         "phase",
         "source",
-        "stop_timing"
+        "stop_timing",
+        "processing_path"
       ]
     },
     {
@@ -441,13 +468,17 @@
               }
             }
           ]
+        },
+        "processing_path": {
+          "const": "local_safety"
         }
       },
       "required": [
         "request_kind",
         "phase",
         "source",
-        "stop_timing"
+        "stop_timing",
+        "processing_path"
       ]
     },
     {
@@ -490,6 +521,9 @@
               }
             }
           ]
+        },
+        "processing_path": {
+          "const": "local_safety"
         }
       },
       "required": [
@@ -497,7 +531,8 @@
         "phase",
         "source",
         "verification",
-        "stop_timing"
+        "stop_timing",
+        "processing_path"
       ]
     },
     {
@@ -543,6 +578,9 @@
               }
             }
           ]
+        },
+        "processing_path": {
+          "const": "local_safety"
         }
       },
       "required": [
@@ -550,7 +588,8 @@
         "phase",
         "source",
         "verification",
-        "stop_timing"
+        "stop_timing",
+        "processing_path"
       ]
     },
     {
@@ -573,13 +612,17 @@
         },
         "stop_timing": {
           "$ref": "#/$defs/stopTiming"
+        },
+        "processing_path": {
+          "const": "local_safety"
         }
       },
       "required": [
         "request_kind",
         "phase",
         "source",
-        "stop_timing"
+        "stop_timing",
+        "processing_path"
       ]
     }
   ]
