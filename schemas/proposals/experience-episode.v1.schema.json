@@ -1,0 +1,512 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:experience-episode:v1",
+  "title": "ExperienceEpisode",
+  "description": "Draft structured index of a robot execution and its immutable external evidence.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "episode_id",
+    "robot_id",
+    "mission_id",
+    "session_id",
+    "started_at",
+    "ended_at",
+    "objective",
+    "outcome",
+    "mission_contract_ref",
+    "versions",
+    "skill_trace",
+    "runtime_event_refs",
+    "artifacts",
+    "success_evidence",
+    "privacy"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.experience-episode.v1"
+    },
+    "episode_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "robot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "mission_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "outcome": {
+      "enum": [
+        "success",
+        "partial",
+        "failed",
+        "cancelled",
+        "safe_stopped"
+      ]
+    },
+    "mission_contract_ref": {
+      "$ref": "#/$defs/versionedRef"
+    },
+    "world_context_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/versionedRef"
+      }
+    },
+    "versions": {
+      "$ref": "#/$defs/versions"
+    },
+    "skill_trace": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/skillTraceEntry"
+      }
+    },
+    "runtime_event_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifactRef"
+      }
+    },
+    "success_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "failure": {
+      "$ref": "#/$defs/failure"
+    },
+    "evaluation_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/versionedRef"
+      }
+    },
+    "candidate_lessons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidateLesson"
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "retention_policy"
+      ],
+      "properties": {
+        "classification": {
+          "enum": [
+            "public",
+            "internal",
+            "restricted",
+            "personal"
+          ]
+        },
+        "retention_policy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "redaction_status": {
+          "enum": [
+            "not_required",
+            "pending",
+            "complete"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "enum": [
+              "failed",
+              "safe_stopped"
+            ]
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "then": {
+        "required": [
+          "failure"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "versionedRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "version",
+        "sha256"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime",
+        "target_adapter",
+        "contract_set",
+        "skills",
+        "knowledge",
+        "model_routes"
+      ],
+      "properties": {
+        "runtime": {
+          "$ref": "#/$defs/versionedRef"
+        },
+        "target_adapter": {
+          "$ref": "#/$defs/versionedRef"
+        },
+        "contract_set": {
+          "$ref": "#/$defs/versionedRef"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/versionedRef"
+          }
+        },
+        "knowledge": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/versionedRef"
+          }
+        },
+        "model_routes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "provider",
+              "model_id",
+              "adapter_version",
+              "decision_ids"
+            ],
+            "properties": {
+              "provider": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "model_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "adapter_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "decision_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "skillTraceEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "call_id",
+        "skill_id",
+        "skill_version",
+        "started_at",
+        "ended_at",
+        "result",
+        "input_ref",
+        "output_ref"
+      ],
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "skill_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "skill_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "result": {
+          "enum": [
+            "success",
+            "failed",
+            "cancelled",
+            "preempted",
+            "unknown"
+          ]
+        },
+        "input_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "output_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "retry_of_call_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "kind",
+        "uri",
+        "sha256",
+        "media_type",
+        "captured_from",
+        "captured_to",
+        "provenance"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "kind": {
+          "enum": [
+            "telemetry",
+            "mcap",
+            "video",
+            "image",
+            "audio",
+            "point_cloud",
+            "log",
+            "trace",
+            "map",
+            "model",
+            "evaluation_report",
+            "other"
+          ]
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "captured_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "captured_to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "privacy_classification": {
+          "enum": [
+            "public",
+            "internal",
+            "restricted",
+            "personal"
+          ]
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "observed_facts",
+        "root_cause_hypothesis",
+        "hypothesis_confidence",
+        "recovery_attempts"
+      ],
+      "properties": {
+        "category": {
+          "enum": [
+            "perception",
+            "planning",
+            "control",
+            "skill",
+            "safety",
+            "hardware",
+            "communication",
+            "human_interaction",
+            "unknown"
+          ]
+        },
+        "observed_facts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "root_cause_hypothesis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "hypothesis_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "recovery_attempts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        }
+      }
+    },
+    "candidateLesson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson_id",
+        "status",
+        "proposal",
+        "applicability",
+        "evidence_artifact_ids"
+      ],
+      "properties": {
+        "lesson_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "status": {
+          "const": "candidate"
+        },
+        "proposal": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "applicability": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "evidence_artifact_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        }
+      }
+    }
+  }
+}

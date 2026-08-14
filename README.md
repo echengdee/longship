@@ -76,6 +76,11 @@ The **scene loop** is intended to turn a real task into structured experience. T
 **ecosystem loop** lets people contribute compatible contracts, plugins, and
 benchmarks without coupling the project to one model, simulator, or robot.
 
+The detailed [System Architecture v2](docs/architecture/system-architecture-v2.md)
+proposal adds interchangeable LLM brains, cross-embodiment skill adapters,
+voice and keyboard intent, transactional task switching, human-readable
+announcements, live observability, and evidence-gated evolution.
+
 ## Contracts First
 
 Longship will stabilize public protocols before expanding implementations.

@@ -17,3 +17,10 @@ another explicitly versioned transport without changing the semantic contract.
 
 Schemas are not yet released. Proposals should begin as public design
 discussions and include compatibility tests before becoming stable.
+
+## Draft Proposals
+
+The first public discussion drafts cover operator intent, runtime events,
+telemetry, and structured experience. See
+[`schemas/proposals/README.md`](proposals/README.md). These files may change
+incompatibly until a stable contract release is declared.

@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:runtime-event:v1",
+  "title": "RuntimeEvent",
+  "description": "Draft authoritative lifecycle, recovery, safety, and health event envelope.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "severity",
+    "occurred_at",
+    "monotonic_time_ns",
+    "emitted_at",
+    "sequence",
+    "source",
+    "robot_id",
+    "state_version",
+    "correlation",
+    "payload_schema",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.runtime-event.v1"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "event_type": {
+      "enum": [
+        "task.accepted",
+        "task.switch.requested",
+        "task.switch.waiting_safe_point",
+        "task.switch.rejected",
+        "task.started",
+        "task.paused",
+        "task.resumed",
+        "task.completed",
+        "task.failed",
+        "recovery.started",
+        "operator.help_required",
+        "safety.protective_stop",
+        "safety.emergency_stop",
+        "component.health_changed"
+      ]
+    },
+    "severity": {
+      "enum": [
+        "debug",
+        "info",
+        "warning",
+        "error",
+        "critical"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "monotonic_time_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "emitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_id",
+        "component_version"
+      ],
+      "properties": {
+        "component_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "component_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "robot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "state_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "correlation": {
+      "$ref": "#/$defs/correlation"
+    },
+    "visibility": {
+      "enum": [
+        "public",
+        "operator",
+        "engineer",
+        "restricted"
+      ]
+    },
+    "payload_schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Typed event payload validated against payload_schema."
+    },
+    "announcement": {
+      "$ref": "#/$defs/announcement"
+    }
+  },
+  "$defs": {
+    "correlation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trace_id"
+      ],
+      "properties": {
+        "trace_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "mission_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "skill_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "parent_event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "announcement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "template_key",
+        "priority",
+        "channels",
+        "dedupe_key",
+        "interruptible"
+      ],
+      "properties": {
+        "template_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"
+        },
+        "template_arguments": {
+          "type": "object"
+        },
+        "priority": {
+          "enum": [
+            "background",
+            "normal",
+            "high",
+            "critical"
+          ]
+        },
+        "channels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "speech",
+              "caption",
+              "ui",
+              "light",
+              "remote"
+            ]
+          }
+        },
+        "dedupe_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "interruptible": {
+          "type": "boolean"
+        },
+        "cooldown_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

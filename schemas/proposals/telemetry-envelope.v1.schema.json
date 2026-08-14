@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:telemetry-envelope:v1",
+  "title": "TelemetryEnvelope",
+  "description": "Draft transport-neutral envelope for multi-rate robot telemetry. High-bandwidth media is referenced, not embedded.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "message_id",
+    "robot_id",
+    "source",
+    "sequence",
+    "observed_at",
+    "monotonic_time_ns",
+    "published_at",
+    "signal_name",
+    "payload_type",
+    "payload_schema",
+    "quality",
+    "privacy",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.telemetry-envelope.v1"
+    },
+    "message_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "robot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_id",
+        "component_version"
+      ],
+      "properties": {
+        "component_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "component_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "sensor_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "monotonic_time_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signal_name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"
+    },
+    "payload_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "payload_schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "unit": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "frame_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "sample_rate_hz": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "correlation": {
+      "$ref": "#/$defs/correlation"
+    },
+    "quality": {
+      "$ref": "#/$defs/quality"
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification"
+      ],
+      "properties": {
+        "classification": {
+          "enum": [
+            "public",
+            "internal",
+            "restricted",
+            "personal"
+          ]
+        },
+        "retention_policy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "payload": {
+      "description": "JSON value validated against payload_schema; media bytes are prohibited."
+    }
+  },
+  "$defs": {
+    "correlation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trace_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "mission_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "skill_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "valid",
+        "age_ms",
+        "stale_after_ms",
+        "clock_status",
+        "dropped_since_last"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "good",
+            "degraded",
+            "stale",
+            "invalid",
+            "unavailable"
+          ]
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "age_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "stale_after_ms": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "clock_status": {
+          "enum": [
+            "synchronized",
+            "estimated",
+            "unsynchronized"
+          ]
+        },
+        "dropped_since_last": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 512
+        }
+      }
+    }
+  }
+}
