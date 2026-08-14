@@ -42,10 +42,30 @@
         "task.resumed",
         "task.completed",
         "task.failed",
+        "control.accepted",
+        "control.rejected",
+        "control.applied",
+        "skill.cancel_requested",
+        "skill.cancel_completed",
+        "skill.cancel_timed_out",
+        "barrier.released",
         "recovery.started",
         "operator.help_required",
+        "safety.stop_requested",
+        "safety.stop_commanded",
+        "safety.motion_ceased",
+        "safety.stop_timeout",
         "safety.protective_stop",
         "safety.emergency_stop",
+        "model.resolve_started",
+        "model.warm_started",
+        "model.shadow_started",
+        "model.handoff_requested",
+        "model.safe_point_reached",
+        "model.lock_activated",
+        "model.canary_failed",
+        "model.rollback_started",
+        "model.rollback_completed",
         "component.health_changed"
       ]
     },
@@ -163,6 +183,34 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 128
+        },
+        "graph_id": {
+          "$ref": "#/$defs/id"
+        },
+        "graph_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "skill_call_id": {
+          "$ref": "#/$defs/id"
+        },
+        "model_lock_id": {
+          "$ref": "#/$defs/id"
+        },
+        "model_role": {
+          "enum": [
+            "brain",
+            "dialogue",
+            "asr",
+            "tts",
+            "perception",
+            "vla_policy",
+            "locomotion_policy",
+            "whole_body_tracking",
+            "world_model"
+          ]
+        },
+        "model_session_id": {
+          "$ref": "#/$defs/id"
         }
       }
     },
@@ -223,6 +271,12 @@
           "format": "date-time"
         }
       }
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
     }
   }
 }

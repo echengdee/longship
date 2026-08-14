@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:control-command-result:v1",
+  "title": "ControlCommandResult",
+  "description": "Draft immutable acknowledgement/effect record for deterministic runtime controls and protective-stop requests. Acceptance is not proof that motion ceased.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "result_id",
+    "request_kind",
+    "request_id",
+    "correlation_id",
+    "result_sequence",
+    "observed_at",
+    "monotonic_time_ns",
+    "phase",
+    "reason_code",
+    "processing_path",
+    "brain_invoked",
+    "state_version_before",
+    "state_version_after",
+    "graph_version_before",
+    "graph_version_after",
+    "affected_node_ids",
+    "emitted_event_ids",
+    "stop_timing"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.control-command-result.v1"
+    },
+    "result_id": {
+      "$ref": "#/$defs/id"
+    },
+    "request_kind": {
+      "enum": [
+        "runtime_control_command",
+        "safety_stop_request"
+      ]
+    },
+    "request_id": {
+      "$ref": "#/$defs/id"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "result_sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "monotonic_time_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "phase": {
+      "enum": [
+        "accepted",
+        "rejected",
+        "duplicate",
+        "commanded",
+        "effect_observed",
+        "safe_state_verified",
+        "timed_out",
+        "failed"
+      ]
+    },
+    "reason_code": {
+      "$ref": "#/$defs/id"
+    },
+    "processing_path": {
+      "enum": [
+        "deterministic_runtime",
+        "local_safety"
+      ]
+    },
+    "brain_invoked": {
+      "const": false
+    },
+    "state_version_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "state_version_after": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "graph_version_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "graph_version_after": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "affected_node_ids": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "emitted_event_ids": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "stop_timing": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/stopTiming"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "stopTiming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recognized_ns",
+        "safety_received_ns",
+        "target_commanded_ns",
+        "motion_ceased_ns",
+        "safe_state_verified_ns",
+        "motion_threshold_profile_id"
+      ],
+      "properties": {
+        "recognized_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "safety_received_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "target_commanded_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "motion_ceased_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "safe_state_verified_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "motion_threshold_profile_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    }
+  }
+}

@@ -33,15 +33,20 @@ the source of bytes. A runtime cache is the source used for execution.
 
 | Example | Longship role | What it contributes | What it must not become |
 | --- | --- | --- | --- |
-| GPT or another LLM | `brain` provider | Goal interpretation, task draft, skill selection, explanation, recovery proposal | A joint, torque, velocity, or safety controller |
-| [NVIDIA Isaac GR00T](https://github.com/NVIDIA/Isaac-GR00T) | `vla_policy` adapter | Multimodal policy inference behind a bounded skill contract | A direct, unvalidated target command source |
+| GPT, Qwen, Claude, or another LLM | `brain` or `dialogue` provider | Goal interpretation, task draft, explanation, recovery proposal, or conversation | A joint, torque, velocity, or safety controller |
+| Whisper, SenseVoice, or another qualified recognizer | `asr` provider | Speech segments or reserved-command candidates | A safety-rated emergency-stop device |
+| CosyVoice or another synthesizer | `tts` provider | Asynchronous speech output behind the Audio Arbiter | A dependency of stopping or control progress |
+| A detector, tracker, or VLM | `perception` provider | Versioned observations and scene interpretation | An unvalidated world-state authority |
+| [NVIDIA Isaac GR00T](https://github.com/NVIDIA/Isaac-GR00T) | `vla_policy` adapter | Multimodal policy inference behind a bounded Skill contract | A direct, unvalidated target command source |
 | [Unitree UnifoLM-VLA](https://github.com/unitreerobotics/unifolm-vla) | `vla_policy` adapter | Manipulation policy training and server-side inference | A bundled or automatically commercial-approved policy |
-| [Holosoma](https://github.com/amazon-far/holosoma) | `locomotion_policy` or `whole_body_tracking` framework adapter | Training, checkpoint production, inference, retargeting, and deployment tools | A monolithic Longship dependency or universal target qualification |
-| [Unitree official SDKs](https://github.com/unitreerobotics) | `target` adapter | Robot state, command transport, frames, device capabilities, and target-specific limits | An assumed foundation model or a portable policy by itself |
+| [Holosoma](https://github.com/amazon-far/holosoma) | `locomotion_policy` or `whole_body_tracking` framework adapter | Training, checkpoint production, inference, retargeting, and deployment tools | A monolithic dependency or universal target qualification |
+| [Unitree official SDKs](https://github.com/unitreerobotics) | `target` adapter | Robot state, command transport, frames, capabilities, and target limits | A foundation model or portable policy by itself |
 
-If an upstream Unitree policy checkpoint is used, it is registered separately
-as a policy artifact. The Unitree target adapter and that policy must have
-independent versions, licenses, hashes, and qualification results.
+A framework, model architecture, checkpoint, processor, runtime image, target
+SDK, robot description, adapter, and target qualification are separate
+identities. If an upstream Unitree policy checkpoint is used, it is registered
+separately from the Unitree target adapter with independent versions, licenses,
+hashes, and qualification results.
 
 Names above identify optional integration families, not endorsements, bundled
 dependencies, or claims of compatibility. Every exact revision is reviewed
@@ -87,7 +92,7 @@ This is a logical layout. Directories are created only when independently
 authored adapter code and maintainers exist. Longship does not copy an upstream
 repository into a plugin directory.
 
-## 4. Two manifests and one lock
+## 4. Two manifests and two locks
 
 ### 4.1 Plugin manifest
 
@@ -133,6 +138,19 @@ plugin version
 
 Mutable tags such as `latest` may be convenient for exploration but are not
 eligible for a qualified deployment. The lock records digests, never secrets.
+
+### 4.4 Model session lock
+
+A deployment lock proves the exact bytes and target qualification for one
+integration. `ModelSessionLock` binds a compatible set of those immutable
+deployments to concurrent runtime roles such as Brain, dialogue, ASR, TTS,
+perception, VLA, locomotion, whole-body tracking, and world model.
+
+One lock revision is immutable. Changing any role creates the next revision
+with explicit `supersedes_lock_id` and `rollback_lock_id`. The lock declares
+the maximum permitted resource scope and handoff policy; it does not grant a
+live actuator lease. Runtime remains the lease authority. Lifecycle state is
+recorded as `RuntimeEvent`, not by mutating the lock.
 
 ## 5. Resolution and cache lifecycle
 
@@ -198,6 +216,34 @@ An action-producing model call includes a unique call ID, observation version,
 model and adapter version, deadline, action horizon, and idempotency key.
 Late output is discarded; it is not applied to a newer world state.
 
+### 6.1 Concurrent sessions and transactional handoff
+
+Models are routed per role rather than by replacing one global model. Dialogue,
+ASR, TTS, perception, and advisory sessions may run together. Action-producing
+sessions may overlap only when their target-qualified composition profile and
+Runtime leases are disjoint. Longship rejects implicit averaging or blending of
+two model outputs that claim the same actuator scope.
+
+A candidate session follows:
+
+```text
+resolve -> hash and license verification -> load -> warm -> shadow
+        -> wait for role-specific safe point -> drain old session
+        -> compare-and-swap lock and leases -> short canary -> commit
+```
+
+Warm and shadow output is never forwarded to the robot. The old session remains
+authoritative until atomic handoff. For control-bearing sessions, rollback first
+revokes the candidate, applies a deterministic hold or stand profile, verifies
+state, and then reactivates a previously qualified lock at a safe point. Direct
+mid-motion policy flipping is prohibited unless that exact transfer path has
+been separately certified.
+
+Every action-bearing candidate includes `model_lock_id`,
+`model_session_id`, role, lease ID, sequence, observation version, deadline,
+and expiry. Arbitration rejects stale locks, stale leases, expired output, and
+scope conflicts.
+
 ## 7. Deployment profiles
 
 ### 7.1 Remote brain
@@ -225,6 +271,20 @@ evidence. They cannot update the active artifact lock directly.
 The same semantic skill and observation contracts feed a simulation adapter.
 Simulation results qualify only the declared simulator and scenario until a
 protected real-target gate is passed.
+
+### 7.5 Speech and dialogue stack
+
+ASR, dialogue, and TTS are independent sessions with separate health,
+deadlines, placement, and failure behavior. TTS owns only speaker resources and
+runs asynchronously; ordinary speech does not pause motion. Runtime and Safety
+events select required safety and transition messages from deterministic local
+templates. Open-ended dialogue may use a model but cannot suppress or delay
+those messages.
+
+A reserved stop grammar is evaluated before free-form dialogue. Echo
+cancellation, push-to-talk, or validated barge-in keeps stop input available
+during TTS. Critical alerts preempt ordinary speech, and TTS failure falls back
+to captions without affecting control.
 
 ## 8. Integration patterns
 
@@ -333,8 +393,10 @@ Public pull-request CI must remain small and deterministic:
 - validate JSON Schema and manifests;
 - run adapter contract tests against synthetic observations;
 - use a fake brain and fake policy backend;
-- test timeouts, stale output, cancellation, hash mismatch, missing access, and
-  resource exhaustion;
+- test timeouts, stale output, cancellation, hash mismatch, missing access,
+  resource exhaustion, conflicting model leases, and immutable-lock CAS;
+- test warm, shadow, safe-point handoff, candidate rejection, canary failure,
+  and rollback with fake providers;
 - confirm that no test downloads a large artifact by default; and
 - confirm that model failure cannot bypass Safety or block safe stop.
 
@@ -363,7 +425,8 @@ target, skill, and safety envelope. Otherwise Runtime pauses or safe-stops.
 The monitoring system exposes:
 
 - resolver state, source, bytes downloaded, cache use, and verification result;
-- loaded plugin, source revision, artifact digests, and deployment lock;
+- loaded plugin, source revision, artifact digests, deployment lock, model
+  session lock, role, session, and permitted versus active resource scope;
 - load and warm-up time, CPU/GPU memory, inference latency, deadline misses,
   output age, and queue depth;
 - observation version, decision or skill call ID, action horizon, and guard
@@ -384,8 +447,12 @@ An adapter proposal is not ready to merge until:
 3. its input, output, frames, units, state version, and expiry are testable;
 4. cancellation, stale output, network loss, and resource failure are defined;
 5. public CI runs without downloading the real model;
-6. the target and safety boundary remain independently testable; and
-7. qualification and rollback evidence can be reproduced from external
+6. concurrent roles have no implicit output blending or conflicting actuator
+   ownership;
+7. role-specific warm, shadow, handoff, canary, and rollback behavior is
+   reproducible with a fake provider;
+8. the target and safety boundary remain independently testable; and
+9. qualification and rollback evidence can be reproduced from external
    artifact references.
 
 Longship integrates large intelligence by pinning and governing it—not by

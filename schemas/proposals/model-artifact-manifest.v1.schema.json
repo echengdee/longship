@@ -38,6 +38,9 @@
     "role": {
       "enum": [
         "brain",
+        "tts",
+        "asr",
+        "dialogue",
         "vla_policy",
         "locomotion_policy",
         "whole_body_tracking",

@@ -3,8 +3,10 @@
 Longship is designed to use plugins so the core can remain independent of specific models,
 simulators, sensors, and robots.
 
-Planned plugin kinds include brain adapters, knowledge sources, skills, policy
-adapters, target adapters, and evaluators.
+Planned plugin kinds include Brain and dialogue adapters, ASR and TTS adapters,
+knowledge sources, perception providers, Skills, policy adapters, target
+adapters, and evaluators. Runtime selects providers per role, so several
+qualified plugins may be active concurrently.
 
 Every plugin will provide a machine-readable manifest similar to:
 
@@ -37,7 +39,10 @@ external registries by immutable digest.
 
 Recommended role separation:
 
-- `brains/<provider>` — event-driven high-level model APIs;
+- `brains/<provider>` — event-driven high-level planning APIs;
+- `dialogue/<provider>` — open-ended conversation;
+- `speech/asr/<provider>` and `speech/tts/<provider>` — independent audio roles;
+- `perception/<provider>` — versioned detection, tracking, or scene interpretation;
 - `policies/groot` or `policies/unifolm` — bounded VLA policy adapters;
 - `locomotion/holosoma` — training/export integration and checkpoint runtime;
   and
@@ -48,6 +53,12 @@ preflight resolves and verifies a reviewed artifact lock, checks license and
 resource requirements, warms the runtime, and confirms target qualification.
 Live missions never trigger a first-time model download.
 
+A `ModelSessionLock` binds exact provider and artifact revisions to roles.
+The Model Session Manager warms and shadows a candidate before a role-specific
+safe-point handoff. Shadow sessions own no actuator lease. Concurrent
+action-producing plugins require disjoint Runtime leases and an approved
+composition profile; conflicting outputs are rejected, never blended.
+
 Public CI uses synthetic observations and mock providers. GPU, simulator, and
 hardware evaluation run in separately authorized environments and publish
 small signed reports and artifact references.
@@ -55,4 +66,6 @@ small signed reports and artifact references.
 See
 [Model, Framework, and Artifact Integration](../docs/architecture/model-and-artifact-integration.md)
 and the draft
-[ModelArtifactManifest](../schemas/proposals/model-artifact-manifest.v1.schema.json).
+[ModelArtifactManifest](../schemas/proposals/model-artifact-manifest.v1.schema.json)
+and
+[ModelSessionLock](../schemas/proposals/model-session-lock.v1.schema.json).

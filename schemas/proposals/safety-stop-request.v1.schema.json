@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:safety-stop-request:v1",
+  "title": "SafetyStopRequest",
+  "description": "Draft idempotent protective-stop request for a deterministic local path. Physical emergency-stop hardware remains outside this application contract.",
+  "$comment": "This contract is not a safety-rated emergency-stop protocol and software cannot use it to clear an emergency-stop or protective-stop latch.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "correlation_id",
+    "robot_id",
+    "recognized_at",
+    "valid_until",
+    "idempotency_key",
+    "source_sequence",
+    "stop_kind",
+    "source",
+    "actor",
+    "reason_code",
+    "stop_profile_id",
+    "bypass_brain",
+    "bypass_compiler",
+    "bypass_scheduler",
+    "wait_for_safe_point"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.safety-stop-request.v1"
+    },
+    "request_id": {
+      "$ref": "#/$defs/id"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "robot_id": {
+      "$ref": "#/$defs/id"
+    },
+    "recognized_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "source_sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stop_kind": {
+      "const": "protective_stop"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "actor": {
+      "$ref": "#/$defs/actor"
+    },
+    "reason_code": {
+      "$ref": "#/$defs/id"
+    },
+    "stop_profile_id": {
+      "$ref": "#/$defs/id"
+    },
+    "bypass_brain": {
+      "const": true
+    },
+    "bypass_compiler": {
+      "const": true
+    },
+    "bypass_scheduler": {
+      "const": true
+    },
+    "wait_for_safe_point": {
+      "const": false
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channel",
+        "endpoint_id",
+        "locality"
+      ],
+      "properties": {
+        "channel": {
+          "enum": [
+            "keyboard_binding",
+            "local_ui",
+            "remote_ui",
+            "reserved_voice_grammar",
+            "api",
+            "watchdog",
+            "safety_monitor"
+          ]
+        },
+        "endpoint_id": {
+          "$ref": "#/$defs/id"
+        },
+        "binding_id": {
+          "$ref": "#/$defs/id"
+        },
+        "locality": {
+          "enum": [
+            "on_robot",
+            "local_network",
+            "remote"
+          ]
+        }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_id",
+        "actor_type",
+        "authorization_ref"
+      ],
+      "properties": {
+        "actor_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_type": {
+          "enum": [
+            "person",
+            "service",
+            "watchdog",
+            "safety_component"
+          ]
+        },
+        "authorization_ref": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    }
+  }
+}

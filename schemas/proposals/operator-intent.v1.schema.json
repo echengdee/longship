@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:longship:schema:operator-intent:v1",
   "title": "OperatorIntent",
-  "description": "Draft proposal for normalized task-level intent. It never carries actuator commands or emergency-stop authority.",
+  "description": "Draft normalized semantic task or dialogue intent. Deterministic runtime controls and protective-stop requests use separate contracts and do not wait for a Brain provider.",
   "x-longship-status": "draft",
   "type": "object",
   "additionalProperties": false,
@@ -22,9 +22,7 @@
       "const": "longship.operator-intent.v1"
     },
     "intent_id": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 128
+      "$ref": "#/$defs/id"
     },
     "issued_at": {
       "type": "string",
@@ -60,13 +58,7 @@
           "$ref": "#/$defs/submitTask"
         },
         {
-          "$ref": "#/$defs/controlTask"
-        },
-        {
-          "$ref": "#/$defs/requestStatus"
-        },
-        {
-          "$ref": "#/$defs/confirmation"
+          "$ref": "#/$defs/dialogueTurn"
         }
       ]
     },
@@ -75,6 +67,12 @@
     }
   },
   "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
     "source": {
       "type": "object",
       "additionalProperties": false,
@@ -93,9 +91,7 @@
           ]
         },
         "endpoint_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "$ref": "#/$defs/id"
         },
         "input_confidence": {
           "type": "number",
@@ -105,7 +101,7 @@
         "raw_input_ref": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional governed reference to source text or audio; raw private input is not embedded."
+          "description": "Optional governed reference; raw private input is not embedded."
         }
       }
     },
@@ -119,9 +115,7 @@
       ],
       "properties": {
         "actor_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "$ref": "#/$defs/id"
         },
         "actor_type": {
           "enum": [
@@ -134,9 +128,7 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 128
+            "$ref": "#/$defs/id"
           }
         }
       }
@@ -146,24 +138,16 @@
       "additionalProperties": false,
       "properties": {
         "robot_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "$ref": "#/$defs/id"
         },
         "mission_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "$ref": "#/$defs/id"
         },
         "session_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "$ref": "#/$defs/id"
         },
         "task_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "$ref": "#/$defs/id"
         },
         "based_on_state_version": {
           "type": "integer",
@@ -179,14 +163,10 @@
       ],
       "properties": {
         "trace_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "$ref": "#/$defs/id"
         },
         "parent_event_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "$ref": "#/$defs/id"
         },
         "idempotency_key": {
           "type": "string",
@@ -224,80 +204,34 @@
         }
       }
     },
-    "controlTask": {
+    "dialogueTurn": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "kind",
-        "action",
-        "task_id"
+        "text",
+        "response_channels"
       ],
       "properties": {
         "kind": {
-          "const": "control_task"
+          "const": "dialogue_turn"
         },
-        "action": {
-          "enum": [
-            "pause",
-            "resume",
-            "cancel"
-          ]
-        },
-        "task_id": {
+        "text": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128
+          "maxLength": 4096
         },
-        "reason": {
-          "type": "string",
-          "maxLength": 512
-        }
-      }
-    },
-    "requestStatus": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "scope"
-      ],
-      "properties": {
-        "kind": {
-          "const": "request_status"
-        },
-        "scope": {
-          "enum": [
-            "robot",
-            "mission",
-            "task"
-          ]
-        },
-        "target_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        }
-      }
-    },
-    "confirmation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "challenge_id",
-        "accepted"
-      ],
-      "properties": {
-        "kind": {
-          "const": "confirmation"
-        },
-        "challenge_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "accepted": {
-          "type": "boolean"
+        "response_channels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "speech",
+              "caption",
+              "ui"
+            ]
+          }
         }
       }
     }

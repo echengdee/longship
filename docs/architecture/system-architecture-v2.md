@@ -52,26 +52,58 @@ planes.
 9. Every capability is qualified per target; cross-embodiment portability is
    declared and tested, never assumed.
 10. Production promotion always requires evidence, gates, and a rollback path.
+11. Fixed keyboard bindings and reserved voice controls are classified before any model call.
+12. A protective stop is idempotent and never waits for a Brain, compiler, scheduler, resource lease, Skill safe point, TTS, dashboard, or cloud service.
+13. Parallel work is admitted only when resource claims are compatible; scheduling lanes never grant actuator authority.
+14. Models are selected per role, not globally. A shadow model owns no actuator lease, and only one active session may own a given actuator scope.
+15. Cancellation is hierarchical, bounded, monotonic, versioned, and unable to resurrect work through late results.
+16. A stop acknowledgement proves only receipt. "Stopped" requires measured target-specific motion or safe-state evidence.
 
 ## 3. System topology
 
 ```mermaid
 flowchart TB
-    Voice["Voice"] --> IG["Interaction Gateway"]
-    Keys["Keyboard / UI"] --> IG
+    Voice["Voice"] --> VoiceFront["Local VAD + ASR<br/>reserved command grammar first"]
+    Keys["Keyboard / UI"] --> IG["Interaction Gateway"]
+    VoiceFront --> IG
     WMS["Authorized API / WMS"] --> IG
-    IG --> Intent["OperatorIntent"]
+    IG --> Route{"Deterministic route class"}
+
+    Route -->|task goal| Intent["OperatorIntent: semantic task"]
     Intent --> Brain["Brain Provider: GPT or another LLM"]
     Brain --> Draft["TaskDraft: untrusted proposal"]
     Draft --> Compiler["Context Compiler + Contract Validator"]
     Compiler --> Mission["MissionContract"]
     Mission --> Runtime["Contextual Runtime"]
-    Runtime --> Skills["Semantic Skills and Policy Adapters"]
-    Skills --> Arbiter["Command Arbiter"]
-    Arbiter --> Safety["Independent Safety Kernel"]
+
+    Route -->|dialogue turn| Dialogue["Dialogue Provider"]
+    Route -->|pause / resume / cancel / status| Control["RuntimeControlCommand"]
+    Control --> ControlCheck["Authorization + freshness + version checks"]
+    ControlCheck --> Runtime
+
+    Route -->|reserved STOP| Stop["Local Stop Dispatcher<br/>no model or safe-point wait"]
+    Physical["Physical emergency stop"] --> Safety["Independent Safety Kernel"]
+    Stop --> Safety
+
+    Runtime --> Scheduler["Parallel DAG Scheduler<br/>resources + barriers + cancellation"]
+    Scheduler --> Motion["Motion / Manipulation Skills"]
+    Scheduler --> Interaction["Speech / Dialogue Skills"]
+    Scheduler --> Perception["Perception / Monitoring Skills"]
+
+    Motion --> Arbiter["Command Arbiter"]
+    Arbiter --> Safety
     Safety --> Target["Embodiment Adapter + Robot or Simulator"]
 
-    Target --> State["World State + Runtime Events"]
+    Runtime --> Events["Authoritative Runtime Events"]
+    Safety --> Events
+    Events --> Notify["Notification Manager"]
+    Notify --> Audio["Audio Arbiter + Local TTS"]
+    Dialogue --> Audio
+    Interaction --> Audio
+    Audio --> Outputs["Speaker / Captions / UI / Lights"]
+
+    Target --> State["Versioned World State"]
+    Perception --> State
     State --> Runtime
     State --> Obs["Observability Gateway"]
     Obs --> Operator["Operator View"]
@@ -80,11 +112,9 @@ flowchart TB
     Episode --> Evolution["Replay / Simulation / Candidate Evolution"]
     Evolution --> Eval["Evaluation + Promotion Gate"]
     Eval -. approved artifacts only .-> Compiler
-    Eval -. approved artifacts only .-> Skills
+    Eval -. approved artifacts only .-> Scheduler
 
-    Runtime --> Notify["Notification Manager"]
-    Notify --> Speech["Local TTS / Captions / UI / Lights"]
-    Safety -. veto and stop .-> Arbiter
+    Safety -. "revoke motion leases; cancel or duck speech" .-> Scheduler
 ```
 
 ## 4. Six responsibility layers
@@ -146,9 +176,16 @@ No stage may be skipped for a production target.
 
 ### 6.1 Interaction and control plane
 
-This plane accepts human or system intent, authenticates the actor, compiles
-missions, leases resources, arbitrates commands, and applies safety. There is
-one authoritative path to robot action.
+This plane has one authenticated ingress and multiple deterministic routes. A
+semantic task goal may reach a Brain Provider. A fixed runtime control goes
+straight to Runtime. A reserved protective-stop request goes to the local Safety
+path. Physical emergency-stop hardware remains independent of application
+software.
+
+All actuator-producing paths still converge at Command Arbitration and Safety.
+The fast path changes latency and authority boundaries; it does not create an
+unbounded route from a keyboard, browser, speech recognizer, or model to a
+motor.
 
 ### 6.2 Observability and experience plane
 
@@ -185,19 +222,61 @@ canonical `TaskState`; it cannot inherit hidden authority from the previous
 provider. Provider name, model identifier, adapter version, latency, and
 decision ID are recorded by the gateway rather than trusted from model output.
 
-### 7.1 Decision continuity and anti-flapping
+### 7.1 Role-scoped concurrent model sessions
+
+Longship does not have one global "current model." The Model Session Manager
+resolves an immutable `ModelSessionLock` with at most one active binding per
+role:
+
+| Role | Responsibility | Normal handoff boundary |
+| --- | --- | --- |
+| `brain` | Planning, replanning, and recovery proposals | Completed decision |
+| `dialogue` | Open-ended conversation | Utterance |
+| `asr` | Streaming speech recognition | Audio segment |
+| `tts` | Speech generation | Utterance |
+| `perception` | Detection, tracking, and scene interpretation | Frame |
+| `vla_policy` | Bounded manipulation proposals or action chunks | Action chunk plus safe hold |
+| `locomotion_policy` | Base, leg, and waist movement | Qualified support phase or stable stand |
+| `whole_body_tracking` | Bounded whole-body reference generation | Declared stable hold |
+| `world_model` | Prediction, scoring, and offline rollout | Rollout |
+
+Non-actuating roles may run concurrently. Action-producing roles may coexist
+only when their Runtime-issued actuator leases are disjoint and a target-tested
+composition profile exists. A VLA requesting whole-body authority must wait for
+locomotion to reach a qualified safe point and release conflicting resources.
+
+The Model Session Manager resolves locks, starts and warms sessions, performs
+shadow comparisons, monitors health, and requests transactional handoff. It
+cannot approve an action or grant itself a resource lease. Every action-bearing
+result is correlated with the lock, session, observation, lease, sequence,
+deadline, and expiry.
+
+A model change follows:
+
+```text
+resolve -> verify -> warm -> shadow -> ready -> wait for role safe point
+        -> drain old session -> atomic lock and lease handoff
+        -> canary -> commit or deterministic rollback
+```
+
+Candidate output is discarded during warm and shadow phases. The previous
+qualified lock remains authoritative and rollback-ready until canary succeeds.
+Canonical Longship state is transferred across providers; opaque vendor session
+state never becomes the robot's source of truth.
+
+### 7.2 Decision continuity and anti-flapping
 
 Runtime, not the model provider, constructs a `BrainRequest` from canonical
 state. It includes the task and plan version, current `ExecutionSnapshot`,
-previous accepted decision, active Skill call, safe point, resource leases,
+previous accepted decision, active Skill set and foreground call, graph safe point, resource leases,
 qualified Skill descriptors, recent material events, and a small set of
 relevant historical episode summaries.
 
 Context is layered:
 
 1. authoritative task, execution, and world-state facts are always present;
-2. the active Skill, resources, and previous accepted decision are always
-   present;
+2. the active Skill set, foreground call, resources, cancellation epoch, and
+   previous accepted decision are always present;
 3. recent history is a bounded event window; and
 4. older experience is retrieved by relevance as summaries and immutable
    references.
@@ -207,7 +286,7 @@ used as state. When history conflicts with the current snapshot, the current
 versioned snapshot wins.
 
 A Brain request is created only for a deduplicated material trigger: new goal,
-terminal Skill result, declared safe point, significant world change, operator
+terminal graph-node result, declared safe point, significant world change, operator
 interrupt, exhausted recovery budget, safety follow-up, invalid plan, or
 deadline. Progress and telemetry events do not invoke the Brain by default.
 
@@ -221,19 +300,23 @@ trigger ID and dedupe key
 + state version
 + plan version
 + expected previous decision ID
-+ expected active Skill call ID
++ expected foreground Skill call ID
++ expected active Skill set version
 + expected safe-point ID
 + decision expiry
 ```
 
-A mismatch rejects the proposal without side effects. The default while a
-valid Skill is active is `continue_active_skill` or `wait_for_event`. A new
-Skill, cancellation, or plan replacement requires an allowed material trigger
-and, where required, a declared safe point. Plan patches may modify pending
-steps only; they cannot rewrite running or terminal steps.
+A mismatch rejects the proposal without side effects. Brain decisions remain
+serial even when Skills execute in parallel. The default while valid work is
+active is `continue_active_skill` for the foreground call or
+`wait_for_event`; auxiliary calls continue under the graph. A new Skill,
+cancellation, or graph replacement requires an allowed material trigger and,
+where required, a declared safe point. Patches may modify pending nodes only;
+they cannot rewrite running or terminal nodes.
 
 The provider gateway assigns or verifies IDs and timestamps. Runtime issues
-resource leases and accepted Skill call IDs. Model-generated Skill arguments
+resource leases, graph-node admissions, cancellation epochs, and accepted Skill
+call IDs. Model-generated Skill arguments
 are validated again against the selected semantic Skill input schema. Generic
 shell, SDK, joint, torque, motor, or trajectory tools are never exposed to the
 Brain.
@@ -244,11 +327,11 @@ independent Safety Kernel.
 
 Draft contracts:
 
-- `ExecutionSnapshot` is the authoritative execution fact source;
+- `ExecutionSnapshot` is the authoritative graph and active-Skill-set fact source;
 - `BrainRequest` is bounded, event-driven context; and
 - `BrainDecision` is a version-bound high-level proposal.
 
-### 7.2 Large model and framework integration
+### 7.3 Large model and framework integration
 
 Longship keeps adapters and manifests in Git while weights, checkpoints,
 datasets, and runtime images remain in external registries. Deployment resolves
@@ -265,48 +348,134 @@ See [Model, Framework, and Artifact Integration](model-and-artifact-integration.
 for repository layout, artifact resolution, license gates, caching, inference
 boundaries, CI, observability, and target-scoped promotion.
 
-## 8. Voice and keyboard interaction
+## 8. Deterministic interaction and parallel task execution
 
-### 8.1 One semantic ingress
+### 8.1 One ingress, four routes
+
+| Route | Examples | Brain used? | Safe-point wait? |
+| --- | --- | --- | --- |
+| Semantic task or dialogue | "Take this box to reception"; open-ended question | Usually | Normal mission or dialogue rules |
+| Runtime control | Pause, resume, cancel, status, speed limit, confirmation answer | No | Command-specific |
+| Protective stop | Reserved `STOP` binding or qualified local keyword | No | Never |
+| Physical emergency stop | Safety-rated hardware input | No software dependency | Never |
+
+The Interaction Gateway authenticates the source and classifies reserved
+commands before free-form input reaches any model. Keyboard control uses fixed
+bindings or a command palette. A reserved voice stop uses a small local grammar
+or qualified keyword detector; an ASR transcript is never executable by itself.
+A voice stop is an operational protective stop, not a safety-rated physical
+emergency stop.
+
+`OperatorIntent` carries semantic task or dialogue input.
+`RuntimeControlCommand` carries deterministic pause, resume, cancel, status,
+confirmation, speed-scale, and teleoperation-mode operations.
+`SafetyStopRequest` carries an idempotent protective-stop request. Physical
+emergency-stop input remains outside these application contracts.
+
+### 8.2 Stop, acknowledgement, and manual control
+
+A protective stop bypasses the Brain, task compiler, DAG scheduler, ordinary
+resource queues, Skill safe points, TTS, observability, and external network
+dependencies. Safety selects the target-qualified stop profile, revokes motion
+leases, issues the stop, and measures the outcome. Software cannot clear a
+physical emergency stop or a latched protective stop merely by receiving
+`resume`.
+
+Stop timing uses distinct monotonic timestamps:
 
 ```text
-voice: VAD -> ASR -> intent normalization
-keyboard: command palette -> intent normalization
-API/WMS: authenticated request -> intent normalization
-                         |
-                         v
-                    OperatorIntent
-                         |
-                         v
-          authorization + TTL + confirmation policy
+t0 = reserved command recognized
+t1 = Safety Kernel receives the request
+t2 = target stop command is issued
+t3 = measured motion falls below the qualified threshold
+t4 = target-defined safe state is verified
+
+dispatch latency = t1 - t0
+command latency  = t2 - t1
+braking latency  = t3 - t2
+safe-state time  = t4 - t0
 ```
 
-An ASR transcript or free-form text is untrusted input. It may express a goal,
-but it is never an executable command. `OperatorIntent` records source, actor,
-authorization scope, confidence, expiry, language, robot context, and
-correlation IDs.
+`accepted` means only that the request was received. The robot may immediately
+display or say "Stopping." It may say "Stopped" only after `t3`, or `t4` when
+the target policy requires full safe-state verification. Missing a
+target-specific deadline emits `safety.stop_timeout` and triggers the
+qualified escalation path. Target qualification records worst-case dispatch,
+command, braking, stopping-distance, and safe-state bounds rather than relying
+on one universal latency claim.
 
-Initial task-level intents should be intentionally small:
+Manual keyboard teleoperation is a separate bounded mode. It requires an
+authorized operator, explicit mode transition, exclusive command ownership,
+dead-man input, short TTL, conservative limits, and automatic stop on key
+release, focus loss, stale input, or network loss. It bypasses the Brain but
+never arbitration or Safety. The public Brain Skill registry never exposes
+joint, torque, motor, PWM, vendor SDK, shell, or raw trajectory controls.
 
-- submit a goal;
-- pause, resume, or cancel a task;
-- request robot or task status; and
-- answer a confirmation challenge.
+### 8.3 Parallel mission DAG
 
-Ambiguous, low-confidence, high-risk, or target-changing intent requires
-confirmation. The robot should restate the proposed action and relevant
-constraint, not merely ask "Are you sure?".
+A mission is a directed acyclic graph, not a single sequential Skill list.
+Ready nodes may run concurrently when all dependency conditions pass and their
+resource claims can be acquired atomically. Lanes such as `motion`, `speech`,
+`perception`, and `monitoring` are scheduling labels; actual concurrency is
+decided by leases.
 
-### 8.2 Emergency stop and manual teleoperation
+For example:
 
-Emergency stop is not a voice intent and does not pass through an LLM. It uses
-a physical or deterministic local safety path.
+```text
+carry_box    claims base + arms
+say_progress claims speaker
+watch_people claims camera read + perception capacity
 
-Manual keyboard teleoperation is a separate bounded mode. It must require an
-authorized operator, an explicit mode transition, exclusive resource lease,
-dead-man input, short command TTL, low initial speed limits, and automatic stop
-on key release, focus loss, stale input, or network loss. It may bypass the
-Brain Provider, but never arbitration or Safety.
+carry_box and say_progress may overlap
+watch_people may overlap both
+two writers for base or the same arm may not overlap
+```
+
+An edge may release a dependent node after admission, start, success, failure,
+cancellation, or any terminal outcome. Admission groups coordinate nodes that
+should start together. Barrier nodes declare `all_succeeded`,
+`all_terminal`, `any_succeeded`, or a quorum, plus a deadline and timeout
+behavior. A speech node blocks mission completion only when
+`required_for_completion=true`.
+
+| Operation | Deterministic behavior |
+| --- | --- |
+| Pause | Stop admitting new work; actuator Skills quiesce at declared safe points. |
+| Cancel | Apply one hierarchical, idempotent cancellation epoch; block new children and cancel the selected scope. |
+| Task switch | Compile the new mission, reach ordinary safe points, release resources atomically, then commit or roll back. |
+| Protective stop | Bypass graph and safe points; Safety revokes motion leases and applies the qualified stop profile. |
+| Physical emergency stop | Use the independent hardware/Safety path; application software cannot clear it. |
+
+Cancellation tokens propagate mission to parallel group to graph node to Skill.
+Terminal state is monotonic. A late result from an older cancellation epoch is
+recorded for evidence but cannot restart work, release a current barrier, or
+satisfy a current success condition. Resource acquisition uses a stable order,
+deadlock detection, deterministic tie-breaking, and priority inheritance where
+supported.
+
+### 8.4 Speech while acting
+
+Mission speech normally owns only the speaker and can run while navigation,
+carrying, manipulation, perception, and monitoring continue. A synchronized
+gesture must additionally claim the required joints and pass the same
+composition checks as any other motion.
+
+Speech priorities are:
+
+```text
+safety alert
+> operator confirmation
+> task transition
+> ordinary mission speech
+> open-ended dialogue
+```
+
+Higher-priority messages may duck or cancel lower-priority TTS. Validated echo
+cancellation, push-to-talk, or barge-in keeps reserved stop detection available
+while the robot speaks. Barge-in cancels speech; it changes robot motion only
+when the deterministic control or safety route accepts the resulting command.
+TTS completion is never allowed to block a control loop, and an announcement is
+never evidence that a physical transition completed.
 
 ## 9. Transactional task switching
 
@@ -333,7 +502,9 @@ stateDiagram-v2
 A safe point is declared by the skill contract. Examples include stopped base
 motion, supported payload, no active contact transition, and bounded actuator
 state. Runtime never switches in the middle of an indivisible motion or contact
-action.
+action. These rules apply to ordinary task changes and model handoffs. A
+protective stop is different: it bypasses safe-point waiting and immediately
+invokes the target-qualified stop profile.
 
 ## 10. Human-readable announcements
 
@@ -349,7 +520,8 @@ It never announces model predictions as completed physical actions.
 | `recovery.started` | "The grasp was not stable. I am aligning again." | Rate-limited explanation |
 | `operator.help_required` | "I need help clearing the destination." | Persistent alert |
 | `task.completed` | "The box has been placed at the destination." | Only after success evidence |
-| `safety.protective_stop` | "I stopped for safety. Please keep the area clear." | High-priority local template |
+| `safety.stop_requested` | "I am stopping." | Immediate high-priority local template |
+| `safety.motion_ceased` | "I have stopped. Please keep the area clear." | Only after measured stop evidence |
 
 Safety and task-transition messages use deterministic, localized templates.
 An LLM may optionally paraphrase noncritical explanations, but it cannot remove
@@ -357,9 +529,11 @@ required facts, lower severity, or delay delivery. Voice, captions, UI, lights,
 and remote notifications share one event source.
 
 Notification policy includes priority, deduplication, cooldown, interruption,
-quiet mode, localization, and accessibility. Critical local alerts preempt
-noncritical speech. TTS failure falls back to captions and visible status;
-failure of all notification outputs does not change Safety behavior.
+quiet mode, localization, and accessibility. Critical local alerts preempt noncritical speech, and a protective stop cancels
+or ducks ordinary TTS without delaying Safety. Mission `say` Skills may overlap
+motion when leases are compatible. TTS failure falls back to captions and
+visible status; failure of all notification outputs does not change Safety
+behavior.
 
 ## 11. Runtime observability
 
@@ -427,8 +601,7 @@ rules; the robot says that a value is unavailable instead of inventing it.
 - camera and sensor timestamps, frame drops, and calibration version;
 - battery, thermal, compute, storage, and process health;
 - network latency, loss, reconnects, and middleware health;
-- brain provider, model and adapter version, inference latency, retries, and
-  validation outcome; and
+- model lock, role, session, provider, artifact and adapter versions, warm/shadow/handoff state, inference latency, retries, lease scope, and validation outcome; and
 - synchronized event timeline, logs, traces, media, and version comparison.
 
 Browser clients never publish directly to robot middleware. Any operator action
@@ -463,7 +636,10 @@ judged successful or failed, and where immutable evidence lives. It includes:
 - mission, context, and world-state references;
 - knowledge, map, code, configuration, runtime, model, adapter, and skill
   versions;
-- ordered skill calls, results, retries, recovery, and safety events;
+- ordered graph nodes, parallel groups, barriers, Skill calls, cancellation
+  epochs, results, retries, recovery, and safety events;
+- model-lock activations, shadow comparisons, handoffs, deadline misses,
+  guard rejections, canary outcomes, and rollbacks;
 - outcome and explicit success evidence;
 - failure taxonomy, observed facts, root-cause hypothesis, and confidence;
 - synchronized artifact references for telemetry, media, logs, and traces;
@@ -482,34 +658,46 @@ it cannot mark that lesson active.
 
 | Contract | Authority and purpose |
 | --- | --- |
-| `OperatorIntent` | Normalized, attributable human or system intent; never low-level control |
-| `ExecutionSnapshot` | Authoritative active Skill, safe point, leases, versions, and safety state |
-| `BrainRequest` | Bounded event-triggered context, current skills, and relevant history |
-| `BrainDecision` | Version-bound, expiring high-level proposal with incremental plan patch |
-| `TaskDraft` | Untrusted brain proposal |
+| `OperatorIntent` | Semantic task or dialogue intent that may use a model; never direct control |
+| `RuntimeControlCommand` | Authenticated pause, resume, cancel, status, speed, confirmation, or teleoperation-mode operation that bypasses Brain providers |
+| `SafetyStopRequest` | Idempotent protective-stop request on the deterministic local Safety path; not a physical emergency-stop protocol |
+| `ControlCommandResult` | Immutable acknowledgement and measured control/stop effect transitions |
+| `MissionTaskGraph` | Versioned parallel DAG, resources, barriers, preemption, and cancellation policy |
+| `ExecutionSnapshot` | Authoritative active Skill set, graph state, foreground call, safe points, leases, versions, and Safety state |
+| `BrainRequest` | Bounded event-triggered context, current Skills, active execution, and relevant history |
+| `BrainDecision` | Version-bound, expiring high-level proposal with pending-only graph/plan patch |
+| `ModelSessionLock` | Immutable role-scoped concurrent model bindings and handoff policy |
+| `TaskDraft` | Untrusted Brain proposal |
 | `MissionContract` | Validated executable task and constraints |
-| `SkillContract` | Bounded capability, safe points, cancellation, evidence, and risk |
+| `SkillContract` | Bounded semantic capability, resources, safe points, cancellation, evidence, and risk |
 | `WorldStateSnapshot` | Timestamped and versioned state used for decisions |
-| `RuntimeEvent` | Authoritative lifecycle, safety, recovery, and health transition |
+| `RuntimeEvent` | Authoritative lifecycle, control, barrier, model, safety, recovery, and health transition |
 | `TelemetryEnvelope` | Multi-rate observation metadata and typed payload reference |
-| `CommandEnvelope` | Bounded command with owner, TTL, target, and arbitration state |
+| `CommandEnvelope` | Bounded target command with owner, TTL, target, and arbitration state |
 | `ExperienceEpisode` | Structured execution evidence and artifact index |
 | `EvaluationResult` | Reproducible metrics and promotion decision |
 | `ArtifactManifest` | Hash, provenance, license, compatibility, and storage URI |
 | `ModelArtifactManifest` | External weights, runtime, resources, licenses, interfaces, and safety envelope |
 
-The first draft schemas in `schemas/proposals/` are discussion artifacts, not
-released compatibility guarantees.
+The thirteen draft schemas in `schemas/proposals/` are discussion artifacts,
+not released compatibility guarantees. JSON Schema cannot prove graph acyclicity,
+reference existence, lease compatibility, monotonic cancellation, timestamp
+ordering, safe-point freshness, stop timing bounds, or atomic compare-and-swap;
+Runtime and target qualification enforce those properties.
 
 ## 14. Degraded modes and failure behavior
 
 | Failure | Required behavior |
 | --- | --- |
 | ASR unavailable or low confidence | Do not act; use keyboard or ask for confirmation |
-| Brain timeout, invalid output, or unavailable provider | Produce no command; bounded retry or provider fallback at a decision boundary |
+| Brain timeout, invalid output, or unavailable provider | Produce no command; deterministic controls and Safety remain available; bounded retry or provider fallback only at a decision boundary |
+| Parallel resource conflict | Deterministically wait, reject, or preempt by policy; never blend conflicting actuator outputs |
+| Barrier timeout | Apply the declared timeout and failure propagation; do not ask a Brain for ordinary synchronization |
+| Model handoff failure | Keep the old lock authoritative or enter the qualified hold/stop path; never flip policies mid-motion |
 | Unknown skill or invalid arguments | Validator rejects; replan once or ask the operator |
 | Stale world state | Discard decision, refresh state, and recompile or pause |
 | TTS unavailable | Continue safely; use captions, UI, and visible indicators |
+| TTS overlaps a stop or critical alert | Duck or cancel speech immediately; never delay stop dispatch |
 | Dashboard unavailable | Local runtime and safety continue; retain bounded edge buffer |
 | Network loss during teleoperation | Expire command lease and stop locally |
 | Camera unavailable | Mark invalid; pause tasks whose evidence or safety contract requires vision |
@@ -522,34 +710,48 @@ released compatibility guarantees.
 
 ### Phase A: contracts and mock target
 
-- Validate the eight draft schemas and representative examples.
-- Normalize keyboard input into `OperatorIntent`.
-- Execute task lifecycle and switching on a mock target.
+- Validate all thirteen draft schemas and representative synthetic examples.
+- Map fixed keyboard bindings to `RuntimeControlCommand` and reserved `STOP`
+  to `SafetyStopRequest`, with no Brain invocation.
+- Emit an immediate accepted result and a later measured effect result; verify
+  that "Stopped" is impossible before motion evidence.
+- Execute a parallel `MissionTaskGraph` on a mock target, including motion plus
+  speech, resource conflict rejection, barriers, cancellation epochs, and late
+  result suppression.
 - Generate deterministic announcements from `RuntimeEvent`.
-- Render synthetic joint, pose, thermal, camera-metadata, and communication
-  telemetry.
-- Exercise decision deduplication, compare-and-swap rejection, sticky active
-  Skills, and a mock artifact resolver without downloading model weights.
+- Render synthetic joint, pose, thermal, camera-metadata, communication, graph,
+  lease, and model-session telemetry.
+- Exercise decision deduplication, active-Skill-set compare-and-swap rejection,
+  and a mock artifact resolver without downloading model weights.
+- Resolve two `ModelSessionLock` revisions and test warm, shadow, safe-point
+  handoff, canary failure, and rollback with fake providers.
 
-### Phase B: local voice and engineering replay
+### Phase B: local voice, audio concurrency, and engineering replay
 
-- Add VAD, ASR, deterministic confirmation, and local TTS adapters.
-- Add a read-only operator view and engineering view.
+- Add VAD, ASR, reserved local command grammar, deterministic confirmation,
+  echo cancellation or push-to-talk, barge-in, and local TTS adapters.
+- Run conversation and task announcements while the mock motion lane is active.
+- Add read-only operator and engineering views.
 - Record time-synchronized telemetry and media artifact references.
-- Replay a complete success, safe-stop, and task-switch episode.
+- Replay a complete success, protective stop, parallel cancellation, model
+  rollback, and transactional task-switch episode.
 
 ### Phase C: one protected robot target
 
-- Add target-specific limits, manual supervision, physical emergency stop,
-  privacy review, and qualification gates.
-- Measure intent-to-acknowledgement latency, announcement correctness, stale-data
-  detection, switch-to-safe-point time, telemetry loss, recovery success, and
-  safe-stop latency.
+- Add target-specific stop profiles and timing thresholds, manual supervision,
+  physical emergency stop, privacy review, and qualification gates.
+- Measure command recognition-to-acknowledgement, `t0` through `t4` stop
+  timing, stopping distance, announcement correctness, stale-data detection,
+  switch-to-safe-point time, resource conflicts, telemetry loss, recovery
+  success, and model-handoff rollback.
+- Prove the deterministic stop path remains available during Brain, network,
+  dashboard, TTS, and model-session failures.
 - Run canary deployments with explicit rollback.
 
-An initial vertical slice should use a small semantic skill set—such as `say`,
-`safe_stop`, `navigate`, `follow`, `pick`, `place`, and `report_status`—before
-adding more model providers or embodiments.
+An initial vertical slice should use a small semantic Skill set—such as `say`,
+`navigate`, `follow`, `pick`, `place`, and `report_status`—plus the
+separate Runtime control and Safety stop paths. A protective stop is not modeled
+as an ordinary semantic Skill.
 
 ## 16. Non-normative open-source implementation candidates
 
@@ -569,6 +771,8 @@ must outlive any individual middleware, viewer, storage format, or model.
 
 ---
 
-**Longship principle:** let models understand and propose; let contracts define;
-let Runtime coordinate; let Skills act; let Safety veto; let monitoring explain
-the present; and let experience improve the next version.
+**Longship principle:** let deterministic controls respond immediately; let
+models understand and propose; let contracts define; let Runtime schedule
+compatible work in parallel; let Skills act; let Safety remain independently
+authoritative; let monitoring prove the present; and let experience improve the
+next version.

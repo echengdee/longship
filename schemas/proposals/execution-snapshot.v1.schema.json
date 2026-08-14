@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:longship:schema:execution-snapshot:v1",
   "title": "ExecutionSnapshot",
-  "description": "Draft authoritative runtime snapshot used to prevent stale or discontinuous brain decisions.",
+  "description": "Draft authoritative runtime snapshot for a parallel mission DAG. It prevents stale or discontinuous brain decisions while keeping Brain decisions serial.",
   "x-longship-status": "draft",
   "type": "object",
   "additionalProperties": false,
@@ -20,7 +20,13 @@
     "monotonic_time_ns",
     "valid_until",
     "execution_phase",
-    "active_skill",
+    "mission_graph_id",
+    "graph_version",
+    "ready_node_ids",
+    "running_node_ids",
+    "active_skill_set_version",
+    "foreground_skill_call_id",
+    "active_skills",
     "safe_point",
     "resource_leases",
     "recent_skill_results",
@@ -83,16 +89,6 @@
         "failed"
       ]
     },
-    "active_skill": {
-      "oneOf": [
-        {
-          "type": "null"
-        },
-        {
-          "$ref": "#/$defs/activeSkill"
-        }
-      ]
-    },
     "safe_point": {
       "$ref": "#/$defs/safePoint"
     },
@@ -144,6 +140,48 @@
       ],
       "minLength": 1,
       "maxLength": 256
+    },
+    "mission_graph_id": {
+      "$ref": "#/$defs/id"
+    },
+    "graph_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ready_node_ids": {
+      "type": "array",
+      "maxItems": 512,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "running_node_ids": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "active_skill_set_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "foreground_skill_call_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "active_skills": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/activeSkill"
+      }
     }
   },
   "$defs": {
@@ -168,7 +206,13 @@
         "idempotency_key",
         "observation_state_version",
         "plan_step_id",
-        "resource_lease_ids"
+        "resource_lease_ids",
+        "graph_node_id",
+        "lane",
+        "parallel_group_id",
+        "cancellation_scope_id",
+        "cancellation_epoch",
+        "safe_point"
       ],
       "properties": {
         "call_id": {
@@ -226,6 +270,38 @@
           "items": {
             "$ref": "#/$defs/id"
           }
+        },
+        "graph_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lane": {
+          "enum": [
+            "motion",
+            "manipulation",
+            "speech",
+            "dialogue",
+            "perception",
+            "monitoring",
+            "coordination"
+          ]
+        },
+        "parallel_group_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "cancellation_scope_id": {
+          "$ref": "#/$defs/id"
+        },
+        "cancellation_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "safe_point": {
+          "$ref": "#/$defs/safePoint"
         }
       }
     },
@@ -274,7 +350,9 @@
         "mode",
         "acquired_at",
         "expires_at",
-        "revocable"
+        "revocable",
+        "owner_node_id",
+        "quantity"
       ],
       "properties": {
         "resource_id": {
@@ -286,7 +364,8 @@
         "mode": {
           "enum": [
             "shared_read",
-            "exclusive"
+            "exclusive",
+            "capacity"
           ]
         },
         "acquired_at": {
@@ -302,6 +381,13 @@
         },
         "revocable": {
           "type": "boolean"
+        },
+        "owner_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "quantity": {
+          "type": "number",
+          "exclusiveMinimum": 0
         }
       }
     },

@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:model-session-lock:v1",
+  "title": "ModelSessionLock",
+  "description": "Draft immutable role-scoped model-session binding. Multiple roles may be active concurrently; actuator authority still comes only from Runtime leases, arbitration, and Safety.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "lock_id",
+    "runtime_session_id",
+    "robot_id",
+    "revision",
+    "created_at",
+    "immutable",
+    "supersedes_lock_id",
+    "rollback_lock_id",
+    "bindings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.model-session-lock.v1"
+    },
+    "lock_id": {
+      "$ref": "#/$defs/id"
+    },
+    "runtime_session_id": {
+      "$ref": "#/$defs/id"
+    },
+    "robot_id": {
+      "$ref": "#/$defs/id"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "immutable": {
+      "const": true
+    },
+    "supersedes_lock_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "rollback_lock_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "brain": {
+          "$ref": "#/$defs/binding"
+        },
+        "dialogue": {
+          "$ref": "#/$defs/binding"
+        },
+        "asr": {
+          "$ref": "#/$defs/binding"
+        },
+        "tts": {
+          "$ref": "#/$defs/binding"
+        },
+        "perception": {
+          "$ref": "#/$defs/binding"
+        },
+        "vla_policy": {
+          "$ref": "#/$defs/binding"
+        },
+        "locomotion_policy": {
+          "$ref": "#/$defs/binding"
+        },
+        "whole_body_tracking": {
+          "$ref": "#/$defs/binding"
+        },
+        "world_model": {
+          "$ref": "#/$defs/binding"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "session_id",
+        "model",
+        "adapter_id",
+        "adapter_version",
+        "config_digest",
+        "placement",
+        "authority",
+        "input_contracts",
+        "output_contracts",
+        "deadline_ms",
+        "permitted_resource_scopes",
+        "handoff"
+      ],
+      "properties": {
+        "session_id": {
+          "$ref": "#/$defs/id"
+        },
+        "model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model_id",
+            "exact_revision",
+            "artifact_manifest_ref",
+            "artifact_manifest_sha256"
+          ],
+          "properties": {
+            "model_id": {
+              "$ref": "#/$defs/id"
+            },
+            "exact_revision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "artifact_manifest_ref": {
+              "type": "string",
+              "format": "uri-reference"
+            },
+            "artifact_manifest_sha256": {
+              "$ref": "#/$defs/digest"
+            }
+          }
+        },
+        "adapter_id": {
+          "$ref": "#/$defs/id"
+        },
+        "adapter_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "config_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "placement": {
+          "enum": [
+            "cloud",
+            "edge_server",
+            "robot"
+          ]
+        },
+        "authority": {
+          "enum": [
+            "advisory",
+            "perception",
+            "speech",
+            "bounded_action_proposal"
+          ]
+        },
+        "input_contracts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uri-reference"
+          }
+        },
+        "output_contracts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uri-reference"
+          }
+        },
+        "deadline_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "permitted_resource_scopes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "composition_profile_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "handoff": {
+          "$ref": "#/$defs/handoff"
+        }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "safe_point",
+        "warmup_probes",
+        "shadow_samples",
+        "drain_timeout_ms",
+        "canary_duration_ms",
+        "fallback"
+      ],
+      "properties": {
+        "safe_point": {
+          "enum": [
+            "immediate",
+            "audio_segment",
+            "utterance",
+            "decision",
+            "frame",
+            "action_chunk",
+            "stable_hold",
+            "stable_stand",
+            "rollout"
+          ]
+        },
+        "warmup_probes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shadow_samples": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "drain_timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canary_duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fallback": {
+          "enum": [
+            "continue_previous",
+            "hold",
+            "stand",
+            "safe_stop"
+          ]
+        }
+      }
+    }
+  }
+}

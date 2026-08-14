@@ -16,6 +16,7 @@
     "expected_previous_decision_id",
     "expected_execution_snapshot_id",
     "expected_active_skill_call_id",
+    "expected_active_skill_set_version",
     "expected_safe_point_id",
     "based_on_state_version",
     "based_on_plan_version",
@@ -48,7 +49,8 @@
         "null"
       ],
       "minLength": 1,
-      "maxLength": 128
+      "maxLength": 128,
+      "description": "Expected foreground Skill call ID; auxiliary parallel calls are protected by expected_active_skill_set_version."
     },
     "based_on_state_version": {
       "type": "integer",
@@ -161,6 +163,11 @@
       ],
       "minLength": 1,
       "maxLength": 128
+    },
+    "expected_active_skill_set_version": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must match ExecutionSnapshot.active_skill_set_version so changes in any parallel active Skill invalidate a stale proposal."
     }
   },
   "$defs": {
@@ -218,7 +225,9 @@
         "arguments",
         "deadline_at",
         "precondition_fact_refs",
-        "on_failure"
+        "on_failure",
+        "graph_node_id",
+        "lane"
       ],
       "properties": {
         "action": {
@@ -234,7 +243,7 @@
         },
         "arguments": {
           "type": "object",
-          "description": "Untrusted arguments; Runtime validates them against the selected SkillDescriptor input_schema_ref."
+          "description": "Untrusted arguments; Runtime validates them against the selected semantic Skill schema and the pending MissionTaskGraph node."
         },
         "deadline_at": {
           "type": "string",
@@ -252,6 +261,20 @@
             "replan",
             "ask_operator",
             "safe_stop"
+          ]
+        },
+        "graph_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lane": {
+          "enum": [
+            "motion",
+            "manipulation",
+            "speech",
+            "dialogue",
+            "perception",
+            "monitoring",
+            "coordination"
           ]
         }
       }
@@ -352,7 +375,8 @@
         "reason_code": {
           "$ref": "#/$defs/id"
         }
-      }
+      },
+      "description": "A non-authoritative request for Runtime/Safety review. Operator and watchdog stop paths use SafetyStopRequest and never wait for this proposal."
     },
     "planPatchOperation": {
       "type": "object",
@@ -386,7 +410,7 @@
         },
         "payload": {
           "type": "object",
-          "description": "Validated against the plan contract before acceptance."
+          "description": "Validated as a pending-only MissionTaskGraph patch before acceptance; running or terminal nodes cannot be rewritten."
         },
         "reason_code": {
           "$ref": "#/$defs/id"

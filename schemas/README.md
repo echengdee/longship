@@ -1,27 +1,27 @@
-# Contracts and Schemas
+# Schemas
 
-Longship follows a contracts-first approach. This directory will contain versioned,
-implementation-neutral schemas for:
+This directory will contain versioned Longship contracts.
 
-- knowledge artifacts,
-- missions and sessions,
-- skills and commands,
-- world-state snapshots,
-- experience episodes,
-- evaluation results, and
-- artifact and plugin manifests.
+The current public discussion set is in [`proposals/`](proposals/) and covers
+semantic intent, deterministic runtime control, protective stop, control
+results, parallel mission graphs, execution/Brain continuity, role-scoped model
+sessions, runtime events, telemetry, model artifacts, and experience.
 
-Low-frequency contracts are expected to use JSON Schema with human-readable
-YAML or JSON examples. High-frequency runtime interfaces may use Protobuf or
-another explicitly versioned transport without changing the semantic contract.
+These are draft JSON Schema 2020-12 documents, not stable releases or
+hardware-qualification claims. Application schemas do not replace physical
+emergency-stop circuits, target-specific controllers, Runtime transaction
+checks, or Safety qualification.
 
-Schemas are not yet released. Proposals should begin as public design
-discussions and include compatibility tests before becoming stable.
+Before a contract is promoted to a stable namespace it needs:
 
-## Draft Proposals
+1. positive and negative synthetic examples;
+2. parser and validator conformance tests;
+3. explicit authority, ownership, timing, and failure semantics;
+4. Runtime checks for cross-document and transactional invariants;
+5. security, privacy, license, and safety review;
+6. simulation or mock-target evaluation; and
+7. target-specific qualification where physical actuation is involved.
 
-The first eight public discussion drafts cover operator intent, stable brain
-decisions, execution state, runtime events, telemetry, structured experience,
-and external model artifacts. See
-[`schemas/proposals/README.md`](proposals/README.md). These files may change
-incompatibly until a stable contract release is declared.
+Large media, logs, datasets, model weights, policy checkpoints, and compiled
+engines are referenced as immutable external artifacts rather than committed
+here.
