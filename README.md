@@ -76,6 +76,13 @@ The **scene loop** is intended to turn a real task into structured experience. T
 **ecosystem loop** lets people contribute compatible contracts, plugins, and
 benchmarks without coupling the project to one model, simulator, or robot.
 
+The detailed [System Architecture v2](docs/architecture/system-architecture-v2.md)
+proposal adds deterministic keyboard and reserved-voice controls that bypass
+LLMs, parallel resource-safe Skills such as speaking while moving, role-scoped
+concurrent model sessions with transactional handoff, cross-embodiment
+adapters, human-readable announcements, live observability, and evidence-gated
+evolution.
+
 ## Contracts First
 
 Longship will stabilize public protocols before expanding implementations.
@@ -88,7 +95,12 @@ Planned core contracts include:
 | `SessionContract` | Runtime scope, participants, resources, and lifecycle |
 | `SkillContract` | A capability interface, inputs, outputs, and cancellation semantics |
 | `WorldStateSnapshot` | A timestamped, internally consistent view of the world |
-| `CommandEnvelope` | A bounded command with ownership, validity, and expiry |
+| `RuntimeControlCommand` | A deterministic pause, resume, cancel, status, speed, or mode command that bypasses Brain providers |
+| `SafetyStopRequest` | A protective-stop request on the local Safety path; physical E-stop remains independent |
+| `MissionTaskGraph` | A parallel DAG with resources, barriers, preemption, and cancellation |
+| `MissionTaskGraphPatch` | A typed, version-bound update to pending graph structure |
+| `ModelSessionLock` | Immutable role-scoped model bindings and handoff policy |
+| `CommandEnvelope` | A bounded target command with ownership, validity, and expiry |
 | `ExperienceEpisode` | Context, actions, outcomes, failures, recovery, and evidence |
 | `EvaluationResult` | Reproducible metrics, target scope, and gate decisions |
 | `ArtifactManifest` | Version, hash, provenance, compatibility, and storage location |

@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:operator-intent:v1",
+  "title": "OperatorIntent",
+  "description": "Draft normalized semantic task or dialogue intent. Deterministic runtime controls and protective-stop requests use separate contracts and do not wait for a Brain provider.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "intent_id",
+    "issued_at",
+    "expires_at",
+    "source",
+    "actor",
+    "priority",
+    "intent",
+    "correlation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.operator-intent.v1"
+    },
+    "intent_id": {
+      "$ref": "#/$defs/id"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "actor": {
+      "$ref": "#/$defs/actor"
+    },
+    "priority": {
+      "enum": [
+        "normal",
+        "high"
+      ]
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 35
+    },
+    "context": {
+      "$ref": "#/$defs/context"
+    },
+    "intent": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/submitTask"
+        },
+        {
+          "$ref": "#/$defs/dialogueTurn"
+        }
+      ]
+    },
+    "correlation": {
+      "$ref": "#/$defs/correlation"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channel",
+        "endpoint_id"
+      ],
+      "properties": {
+        "channel": {
+          "enum": [
+            "voice",
+            "keyboard",
+            "ui",
+            "api",
+            "wms"
+          ]
+        },
+        "endpoint_id": {
+          "$ref": "#/$defs/id"
+        },
+        "input_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "raw_input_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional governed reference; raw private input is not embedded."
+        }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_id",
+        "actor_type",
+        "authorization_scopes"
+      ],
+      "properties": {
+        "actor_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_type": {
+          "enum": [
+            "person",
+            "service"
+          ]
+        },
+        "authorization_scopes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "robot_id": {
+          "$ref": "#/$defs/id"
+        },
+        "mission_id": {
+          "$ref": "#/$defs/id"
+        },
+        "session_id": {
+          "$ref": "#/$defs/id"
+        },
+        "task_id": {
+          "$ref": "#/$defs/id"
+        },
+        "based_on_state_version": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "correlation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trace_id"
+      ],
+      "properties": {
+        "trace_id": {
+          "$ref": "#/$defs/id"
+        },
+        "parent_event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "submitTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "goal",
+        "confirmation_policy"
+      ],
+      "properties": {
+        "kind": {
+          "const": "submit_task"
+        },
+        "goal": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Untrusted mission-specific parameters validated by the Context Compiler."
+        },
+        "confirmation_policy": {
+          "enum": [
+            "when_ambiguous",
+            "always"
+          ]
+        }
+      }
+    },
+    "dialogueTurn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "text",
+        "response_channels"
+      ],
+      "properties": {
+        "kind": {
+          "const": "dialogue_turn"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "response_channels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "speech",
+              "caption",
+              "ui"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

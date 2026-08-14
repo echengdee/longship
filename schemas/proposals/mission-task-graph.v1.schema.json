@@ -1,0 +1,600 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:mission-task-graph:v1",
+  "title": "MissionTaskGraph",
+  "description": "Draft deterministic DAG for parallel semantic Skills, resource admission, synchronization, preemption, cancellation, and barrier release.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "graph_id",
+    "graph_version",
+    "mission_id",
+    "task_id",
+    "correlation_id",
+    "created_at",
+    "based_on_state_version",
+    "entry_node_ids",
+    "max_parallelism",
+    "failure_policy",
+    "cancellation_policy",
+    "admission_groups",
+    "nodes",
+    "edges"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.mission-task-graph.v1"
+    },
+    "graph_id": {
+      "$ref": "#/$defs/id"
+    },
+    "graph_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "mission_id": {
+      "$ref": "#/$defs/id"
+    },
+    "task_id": {
+      "$ref": "#/$defs/id"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "based_on_state_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "entry_node_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "max_parallelism": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64
+    },
+    "failure_policy": {
+      "enum": [
+        "fail_fast",
+        "continue_independent",
+        "cancel_dependents"
+      ]
+    },
+    "cancellation_policy": {
+      "$ref": "#/$defs/cancellation"
+    },
+    "admission_groups": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/admissionGroup"
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/skillNode"
+          },
+          {
+            "$ref": "#/$defs/barrierNode"
+          }
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 2048,
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "skillNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "objective",
+        "lane",
+        "parallel_group_id",
+        "admission_group_id",
+        "cancellation_scope_id",
+        "required_for_completion",
+        "priority",
+        "resource_claims",
+        "preemption",
+        "cancellation",
+        "timeout_ms",
+        "failure_policy",
+        "kind",
+        "skill_id",
+        "skill_version",
+        "arguments",
+        "success_condition_codes"
+      ],
+      "properties": {
+        "node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "lane": {
+          "enum": [
+            "motion",
+            "manipulation",
+            "speech",
+            "dialogue",
+            "perception",
+            "monitoring",
+            "coordination"
+          ]
+        },
+        "parallel_group_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "admission_group_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "cancellation_scope_id": {
+          "$ref": "#/$defs/id"
+        },
+        "required_for_completion": {
+          "type": "boolean"
+        },
+        "priority": {
+          "$ref": "#/$defs/priority"
+        },
+        "resource_claims": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/resourceClaim"
+          }
+        },
+        "preemption": {
+          "$ref": "#/$defs/preemption"
+        },
+        "cancellation": {
+          "$ref": "#/$defs/cancellation"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "failure_policy": {
+          "enum": [
+            "fail_mission",
+            "cancel_dependents",
+            "continue_independent",
+            "request_recovery"
+          ]
+        },
+        "kind": {
+          "const": "skill"
+        },
+        "skill_id": {
+          "$ref": "#/$defs/id"
+        },
+        "skill_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "arguments": {
+          "type": "object",
+          "description": "Must validate against the registered semantic Skill input schema. Low-level actuator, SDK, shell, torque, motor, or raw trajectory interfaces are prohibited."
+        },
+        "success_condition_codes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "barrierNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "objective",
+        "lane",
+        "parallel_group_id",
+        "admission_group_id",
+        "cancellation_scope_id",
+        "required_for_completion",
+        "priority",
+        "resource_claims",
+        "preemption",
+        "cancellation",
+        "timeout_ms",
+        "failure_policy",
+        "kind",
+        "participant_node_ids",
+        "join_policy",
+        "quorum",
+        "on_timeout"
+      ],
+      "properties": {
+        "node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "lane": {
+          "enum": [
+            "motion",
+            "manipulation",
+            "speech",
+            "dialogue",
+            "perception",
+            "monitoring",
+            "coordination"
+          ]
+        },
+        "parallel_group_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "admission_group_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "cancellation_scope_id": {
+          "$ref": "#/$defs/id"
+        },
+        "required_for_completion": {
+          "type": "boolean"
+        },
+        "priority": {
+          "$ref": "#/$defs/priority"
+        },
+        "resource_claims": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/resourceClaim"
+          }
+        },
+        "preemption": {
+          "$ref": "#/$defs/preemption"
+        },
+        "cancellation": {
+          "$ref": "#/$defs/cancellation"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "failure_policy": {
+          "enum": [
+            "fail_mission",
+            "cancel_dependents",
+            "continue_independent",
+            "request_recovery"
+          ]
+        },
+        "kind": {
+          "const": "barrier"
+        },
+        "participant_node_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "join_policy": {
+          "enum": [
+            "all_succeeded",
+            "all_terminal",
+            "any_succeeded",
+            "quorum_succeeded"
+          ]
+        },
+        "quorum": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "on_timeout": {
+          "enum": [
+            "fail_barrier",
+            "cancel_remaining",
+            "release_with_partial"
+          ]
+        }
+      }
+    },
+    "admissionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group_id",
+        "member_node_ids",
+        "policy",
+        "start_skew_budget_ms",
+        "cancellation_scope_id"
+      ],
+      "properties": {
+        "group_id": {
+          "$ref": "#/$defs/id"
+        },
+        "member_node_ids": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "policy": {
+          "enum": [
+            "all_or_none",
+            "best_effort"
+          ]
+        },
+        "start_skew_budget_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cancellation_scope_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "priority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "class",
+        "base"
+      ],
+      "properties": {
+        "class": {
+          "enum": [
+            "background",
+            "normal",
+            "high"
+          ]
+        },
+        "base": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "deadline_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "resourceClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "resource_id",
+        "mode",
+        "quantity",
+        "acquisition",
+        "lease_ttl_ms",
+        "release_when"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/id"
+        },
+        "resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "mode": {
+          "enum": [
+            "shared_read",
+            "exclusive",
+            "capacity"
+          ]
+        },
+        "quantity": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "acquisition": {
+          "const": "atomic_with_node_claims"
+        },
+        "lease_ttl_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "release_when": {
+          "enum": [
+            "node_terminal",
+            "barrier_release"
+          ]
+        }
+      }
+    },
+    "preemption": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preemptible",
+            "mode"
+          ],
+          "properties": {
+            "preemptible": {
+              "const": false
+            },
+            "mode": {
+              "const": "never"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preemptible",
+            "mode",
+            "min_priority_delta",
+            "max_deferral_ms",
+            "on_preempt",
+            "accepted_safe_point_codes"
+          ],
+          "properties": {
+            "preemptible": {
+              "const": true
+            },
+            "mode": {
+              "const": "at_safe_point"
+            },
+            "min_priority_delta": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_deferral_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "on_preempt": {
+              "enum": [
+                "pause",
+                "cancel"
+              ]
+            },
+            "accepted_safe_point_codes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "cancellation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "propagate_to",
+        "max_wait_ms",
+        "on_timeout"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "at_safe_point",
+            "immediate_if_already_safe"
+          ]
+        },
+        "propagate_to": {
+          "enum": [
+            "target_only",
+            "descendants",
+            "dependents",
+            "parallel_group",
+            "entire_subgraph",
+            "entire_mission"
+          ]
+        },
+        "max_wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "on_timeout": {
+          "enum": [
+            "mark_failed",
+            "escalate_to_safety"
+          ]
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edge_id",
+        "from_node_id",
+        "to_node_id",
+        "when"
+      ],
+      "properties": {
+        "edge_id": {
+          "$ref": "#/$defs/id"
+        },
+        "from_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "to_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "when": {
+          "enum": [
+            "after_admitted",
+            "after_started",
+            "after_success",
+            "after_failure",
+            "after_cancel",
+            "after_terminal"
+          ]
+        }
+      }
+    }
+  }
+}
