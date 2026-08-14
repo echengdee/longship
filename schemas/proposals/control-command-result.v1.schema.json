@@ -16,6 +16,8 @@
     "observed_at",
     "monotonic_time_ns",
     "phase",
+    "source",
+    "verification",
     "reason_code",
     "processing_path",
     "brain_invoked",
@@ -135,6 +137,19 @@
           "$ref": "#/$defs/stopTiming"
         }
       ]
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "verification": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/verification"
+        }
+      ]
     }
   },
   "$defs": {
@@ -153,7 +168,11 @@
         "target_commanded_ns",
         "motion_ceased_ns",
         "safe_state_verified_ns",
-        "motion_threshold_profile_id"
+        "motion_threshold_profile_id",
+        "clock_domain_id",
+        "clock_relation",
+        "max_clock_error_ns",
+        "resolved_stop_profile_id"
       ],
       "properties": {
         "recognized_ns": {
@@ -190,8 +209,378 @@
         },
         "motion_threshold_profile_id": {
           "$ref": "#/$defs/id"
+        },
+        "clock_domain_id": {
+          "$ref": "#/$defs/id"
+        },
+        "clock_relation": {
+          "enum": [
+            "same_monotonic_domain",
+            "synchronized_domains",
+            "unsynchronized"
+          ]
+        },
+        "max_clock_error_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "resolved_stop_profile_id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "clock_relation": {
+                "const": "unsynchronized"
+              }
+            },
+            "required": [
+              "clock_relation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "max_clock_error_ns": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "max_clock_error_ns": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_id",
+        "component_version",
+        "instance_id",
+        "authority"
+      ],
+      "properties": {
+        "component_id": {
+          "$ref": "#/$defs/id"
+        },
+        "component_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "instance_id": {
+          "$ref": "#/$defs/id"
+        },
+        "authority": {
+          "enum": [
+            "interaction_gateway",
+            "runtime",
+            "safety_kernel",
+            "target_monitor"
+          ]
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verifier",
+        "criterion_profile_id",
+        "state_version",
+        "evidence_refs"
+      ],
+      "properties": {
+        "verifier": {
+          "$ref": "#/$defs/source"
+        },
+        "criterion_profile_id": {
+          "$ref": "#/$defs/id"
+        },
+        "state_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uri-reference"
+          }
         }
       }
     }
-  }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "request_kind": {
+          "const": "runtime_control_command"
+        },
+        "phase": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "duplicate",
+            "commanded",
+            "effect_observed",
+            "timed_out",
+            "failed"
+          ]
+        },
+        "stop_timing": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "request_kind",
+        "phase",
+        "stop_timing"
+      ]
+    },
+    {
+      "properties": {
+        "request_kind": {
+          "const": "safety_stop_request"
+        },
+        "phase": {
+          "enum": [
+            "rejected",
+            "duplicate",
+            "failed"
+          ]
+        },
+        "stop_timing": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "request_kind",
+        "phase",
+        "stop_timing"
+      ]
+    },
+    {
+      "properties": {
+        "request_kind": {
+          "const": "safety_stop_request"
+        },
+        "phase": {
+          "const": "accepted"
+        },
+        "source": {
+          "properties": {
+            "authority": {
+              "const": "safety_kernel"
+            }
+          }
+        },
+        "stop_timing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/stopTiming"
+            },
+            {
+              "properties": {
+                "safety_received_ns": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "request_kind",
+        "phase",
+        "source",
+        "stop_timing"
+      ]
+    },
+    {
+      "properties": {
+        "request_kind": {
+          "const": "safety_stop_request"
+        },
+        "phase": {
+          "const": "commanded"
+        },
+        "source": {
+          "properties": {
+            "authority": {
+              "const": "safety_kernel"
+            }
+          }
+        },
+        "stop_timing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/stopTiming"
+            },
+            {
+              "properties": {
+                "safety_received_ns": {
+                  "type": "integer"
+                },
+                "target_commanded_ns": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "request_kind",
+        "phase",
+        "source",
+        "stop_timing"
+      ]
+    },
+    {
+      "properties": {
+        "request_kind": {
+          "const": "safety_stop_request"
+        },
+        "phase": {
+          "const": "effect_observed"
+        },
+        "source": {
+          "properties": {
+            "authority": {
+              "enum": [
+                "safety_kernel",
+                "target_monitor"
+              ]
+            }
+          }
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        },
+        "stop_timing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/stopTiming"
+            },
+            {
+              "properties": {
+                "safety_received_ns": {
+                  "type": "integer"
+                },
+                "target_commanded_ns": {
+                  "type": "integer"
+                },
+                "motion_ceased_ns": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "request_kind",
+        "phase",
+        "source",
+        "verification",
+        "stop_timing"
+      ]
+    },
+    {
+      "properties": {
+        "request_kind": {
+          "const": "safety_stop_request"
+        },
+        "phase": {
+          "const": "safe_state_verified"
+        },
+        "source": {
+          "properties": {
+            "authority": {
+              "enum": [
+                "safety_kernel",
+                "target_monitor"
+              ]
+            }
+          }
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        },
+        "stop_timing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/stopTiming"
+            },
+            {
+              "properties": {
+                "safety_received_ns": {
+                  "type": "integer"
+                },
+                "target_commanded_ns": {
+                  "type": "integer"
+                },
+                "motion_ceased_ns": {
+                  "type": "integer"
+                },
+                "safe_state_verified_ns": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "request_kind",
+        "phase",
+        "source",
+        "verification",
+        "stop_timing"
+      ]
+    },
+    {
+      "properties": {
+        "request_kind": {
+          "const": "safety_stop_request"
+        },
+        "phase": {
+          "const": "timed_out"
+        },
+        "source": {
+          "properties": {
+            "authority": {
+              "enum": [
+                "safety_kernel",
+                "target_monitor"
+              ]
+            }
+          }
+        },
+        "stop_timing": {
+          "$ref": "#/$defs/stopTiming"
+        }
+      },
+      "required": [
+        "request_kind",
+        "phase",
+        "source",
+        "stop_timing"
+      ]
+    }
+  ]
 }

@@ -193,6 +193,9 @@
         },
         "model_session_id": {
           "$ref": "#/$defs/id"
+        },
+        "model_binding_id": {
+          "$ref": "#/$defs/id"
         }
       }
     },

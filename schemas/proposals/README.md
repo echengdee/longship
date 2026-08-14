@@ -21,6 +21,8 @@ and
 - `mission-task-graph.v1.schema.json` — a versioned parallel DAG with resource
   claims, admission groups, event edges, barriers, preemption, and hierarchical
   cancellation.
+- `mission-task-graph-patch.v1.schema.json` — typed, expiring pending-only graph
+  mutations bound to graph, Runtime state, and active-Skill-set versions.
 - `execution-snapshot.v1.schema.json` — authoritative graph state, active
   Skill set, foreground call, safe points, resource leases, versions, and
   current Safety state.
@@ -28,12 +30,12 @@ and
   Skills, previous decision, recent events, and relevant historical episodes.
 - `brain-decision.v1.schema.json` — an expiring compare-and-swap high-level
   proposal bound to the whole active-Skill-set version.
-- `model-artifact-manifest.v1.schema.json` — immutable external model and
-  policy artifacts, licenses, resources, interfaces, deployment, and safety
-  envelope.
-- `model-session-lock.v1.schema.json` — immutable role-scoped bindings for
-  concurrent Brain, dialogue, speech, perception, embodied-policy, and
-  world-model sessions.
+- `model-artifact-manifest.v1.schema.json` — role-conditional external model
+  artifacts, licenses, resources, interfaces, degraded modes, and action-only
+  safety requirements.
+- `model-session-lock.v1.schema.json` — an immutable audit snapshot of
+  independently versioned role bindings, deployment locks, hashed handoff
+  gates, and role-scoped rollback targets.
 - `runtime-event.v1.schema.json` — authoritative task, control, barrier,
   cancellation, model handoff, safety, recovery, and health transitions.
 - `telemetry-envelope.v1.schema.json` — transport-neutral identity, timing,
@@ -44,6 +46,8 @@ and
 ## Proposal rules
 
 - All schemas use JSON Schema Draft 2020-12.
+- Cross-file references use each target schema's absolute Longship URN; relative
+  references are reserved for fragments within the current schema.
 - A proposal carries `x-longship-status: draft` and may change incompatibly
   before release.
 - Examples must be synthetic and license-compatible.

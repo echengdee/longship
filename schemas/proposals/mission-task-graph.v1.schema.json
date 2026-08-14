@@ -460,7 +460,6 @@
         "release_when": {
           "enum": [
             "node_terminal",
-            "safe_point",
             "barrier_release"
           ]
         }

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:longship:schema:safety-stop-request:v1",
   "title": "SafetyStopRequest",
-  "description": "Draft idempotent protective-stop request for a deterministic local path. Physical emergency-stop hardware remains outside this application contract.",
+  "description": "Draft idempotent protective-stop request for a deterministic local path. Safety resolves the qualified stop profile; physical emergency-stop hardware remains outside this application contract.",
   "$comment": "This contract is not a safety-rated emergency-stop protocol and software cannot use it to clear an emergency-stop or protective-stop latch.",
   "x-longship-status": "draft",
   "type": "object",
@@ -20,7 +20,6 @@
     "source",
     "actor",
     "reason_code",
-    "stop_profile_id",
     "bypass_brain",
     "bypass_compiler",
     "bypass_scheduler",
@@ -66,9 +65,6 @@
       "$ref": "#/$defs/actor"
     },
     "reason_code": {
-      "$ref": "#/$defs/id"
-    },
-    "stop_profile_id": {
       "$ref": "#/$defs/id"
     },
     "bypass_brain": {

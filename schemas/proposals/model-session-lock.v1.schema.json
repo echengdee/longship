@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:longship:schema:model-session-lock:v1",
   "title": "ModelSessionLock",
-  "description": "Draft immutable role-scoped model-session binding. Multiple roles may be active concurrently; actuator authority still comes only from Runtime leases, arbitration, and Safety.",
+  "description": "Draft immutable audit snapshot of role-scoped model-session bindings. Each binding has an independent identity, revision, deployment lock, handoff gate, and rollback target; actuator authority still comes only from Runtime leases, arbitration, and Safety.",
   "x-longship-status": "draft",
   "type": "object",
   "additionalProperties": false,
@@ -15,7 +15,6 @@
     "created_at",
     "immutable",
     "supersedes_lock_id",
-    "rollback_lock_id",
     "bindings"
   ],
   "properties": {
@@ -50,45 +49,37 @@
       "minLength": 1,
       "maxLength": 128
     },
-    "rollback_lock_id": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "maxLength": 128
-    },
     "bindings": {
       "type": "object",
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
         "brain": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/brainBinding"
         },
         "dialogue": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/dialogueBinding"
         },
         "asr": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/asrBinding"
         },
         "tts": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/ttsBinding"
         },
         "perception": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/perceptionBinding"
         },
         "vla_policy": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/vlaBinding"
         },
         "locomotion_policy": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/locomotionBinding"
         },
         "whole_body_tracking": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/wholeBodyBinding"
         },
         "world_model": {
-          "$ref": "#/$defs/binding"
+          "$ref": "#/$defs/worldModelBinding"
         }
       }
     }
@@ -108,6 +99,14 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "role",
+        "deployment_lock_sha256",
+        "deployment_lock_ref",
+        "rollback_binding_id",
+        "supersedes_binding_id",
+        "binding_digest",
+        "binding_revision",
+        "binding_id",
         "session_id",
         "model",
         "adapter_id",
@@ -217,6 +216,52 @@
         },
         "handoff": {
           "$ref": "#/$defs/handoff"
+        },
+        "binding_id": {
+          "$ref": "#/$defs/id"
+        },
+        "binding_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "binding_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "supersedes_binding_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "rollback_binding_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "deployment_lock_ref": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "deployment_lock_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "role": {
+          "enum": [
+            "brain",
+            "dialogue",
+            "asr",
+            "tts",
+            "perception",
+            "vla_policy",
+            "locomotion_policy",
+            "whole_body_tracking",
+            "world_model"
+          ]
         }
       }
     },
@@ -224,6 +269,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "handoff_gate_profile_sha256",
+        "handoff_gate_profile_ref",
         "safe_point",
         "warmup_probes",
         "shadow_samples",
@@ -268,8 +315,235 @@
             "stand",
             "safe_stop"
           ]
+        },
+        "handoff_gate_profile_ref": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "handoff_gate_profile_sha256": {
+          "$ref": "#/$defs/digest"
         }
       }
+    },
+    "actionBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/binding"
+        },
+        {
+          "properties": {
+            "authority": {
+              "const": "bounded_action_proposal"
+            },
+            "handoff": {
+              "properties": {
+                "safe_point": {
+                  "enum": [
+                    "action_chunk",
+                    "stable_hold",
+                    "stable_stand"
+                  ]
+                },
+                "warmup_probes": {
+                  "minimum": 1
+                },
+                "shadow_samples": {
+                  "minimum": 1
+                },
+                "canary_duration_ms": {
+                  "minimum": 1
+                }
+              }
+            },
+            "permitted_resource_scopes": {
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "vlaBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/actionBinding"
+        },
+        {
+          "properties": {
+            "handoff": {
+              "properties": {
+                "safe_point": {
+                  "enum": [
+                    "action_chunk",
+                    "stable_hold"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "vla_policy"
+            }
+          }
+        }
+      ]
+    },
+    "locomotionBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/actionBinding"
+        },
+        {
+          "properties": {
+            "handoff": {
+              "properties": {
+                "safe_point": {
+                  "enum": [
+                    "stable_hold",
+                    "stable_stand"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "locomotion_policy"
+            }
+          }
+        }
+      ]
+    },
+    "wholeBodyBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/actionBinding"
+        },
+        {
+          "properties": {
+            "handoff": {
+              "properties": {
+                "safe_point": {
+                  "const": "stable_hold"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "whole_body_tracking"
+            }
+          }
+        }
+      ]
+    },
+    "brainBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/binding"
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "brain"
+            },
+            "authority": {
+              "const": "advisory"
+            }
+          }
+        }
+      ]
+    },
+    "dialogueBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/binding"
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "dialogue"
+            },
+            "authority": {
+              "const": "advisory"
+            }
+          }
+        }
+      ]
+    },
+    "asrBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/binding"
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "asr"
+            },
+            "authority": {
+              "const": "perception"
+            }
+          }
+        }
+      ]
+    },
+    "ttsBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/binding"
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "tts"
+            },
+            "authority": {
+              "const": "speech"
+            }
+          }
+        }
+      ]
+    },
+    "perceptionBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/binding"
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "perception"
+            },
+            "authority": {
+              "const": "perception"
+            }
+          }
+        }
+      ]
+    },
+    "worldModelBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/binding"
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "world_model"
+            },
+            "authority": {
+              "const": "advisory"
+            }
+          }
+        }
+      ]
     }
   }
 }

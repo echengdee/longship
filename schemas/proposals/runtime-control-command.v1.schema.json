@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:longship:schema:runtime-control-command:v1",
   "title": "RuntimeControlCommand",
-  "description": "Draft deterministic operator/runtime control command. It bypasses Brain providers but never bypasses authorization, Runtime validation, arbitration, or Safety.",
+  "description": "Draft deterministic operator/runtime control command. It bypasses Brain providers but never bypasses authorization, version checks where required, Runtime validation, arbitration, or Safety; resume cannot clear a latched stop.",
   "x-longship-status": "draft",
   "type": "object",
   "additionalProperties": false,
@@ -157,8 +157,7 @@
       "required": [
         "actor_id",
         "actor_type",
-        "authorization_ref",
-        "authorization_scopes"
+        "authorization_decision_ref"
       ],
       "properties": {
         "actor_id": {
@@ -171,16 +170,9 @@
             "runtime_component"
           ]
         },
-        "authorization_ref": {
-          "$ref": "#/$defs/id"
-        },
-        "authorization_scopes": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {
-            "$ref": "#/$defs/id"
-          }
+        "authorization_decision_ref": {
+          "$ref": "#/$defs/id",
+          "description": "Gateway-injected reference to an authenticated authorization decision; untrusted input cannot self-declare scopes."
         }
       }
     },
@@ -219,7 +211,8 @@
         "type",
         "mode",
         "max_wait_ms",
-        "reason_code"
+        "reason_code",
+        "on_timeout"
       ],
       "properties": {
         "type": {
@@ -234,6 +227,12 @@
         },
         "reason_code": {
           "$ref": "#/$defs/id"
+        },
+        "on_timeout": {
+          "enum": [
+            "reject",
+            "escalate_to_safety"
+          ]
         }
       }
     },
@@ -251,7 +250,8 @@
         "reason_code": {
           "$ref": "#/$defs/id"
         }
-      }
+      },
+      "description": "Resumes only a paused mission/task/group/Skill after version and Safety-state validation; never clears a protective-stop or emergency-stop latch."
     },
     "cancel": {
       "type": "object",
@@ -261,7 +261,8 @@
         "mode",
         "propagate_to",
         "max_wait_ms",
-        "reason_code"
+        "reason_code",
+        "on_timeout"
       ],
       "properties": {
         "type": {
@@ -288,6 +289,12 @@
         },
         "reason_code": {
           "$ref": "#/$defs/id"
+        },
+        "on_timeout": {
+          "enum": [
+            "reject",
+            "escalate_to_safety"
+          ]
         }
       }
     },
@@ -393,5 +400,477 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "type": {
+                "const": "pause"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "channel": {
+                "enum": [
+                  "keyboard_binding",
+                  "local_ui",
+                  "remote_ui",
+                  "reserved_voice_grammar",
+                  "api",
+                  "wms",
+                  "runtime_internal"
+                ]
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "scope": {
+                "enum": [
+                  "mission",
+                  "task",
+                  "parallel_group",
+                  "skill_call"
+                ]
+              }
+            }
+          },
+          "actor": {
+            "properties": {
+              "actor_type": {
+                "enum": [
+                  "person",
+                  "service",
+                  "runtime_component"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "type": {
+                "const": "cancel"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "channel": {
+                "enum": [
+                  "keyboard_binding",
+                  "local_ui",
+                  "remote_ui",
+                  "reserved_voice_grammar",
+                  "api",
+                  "wms",
+                  "runtime_internal"
+                ]
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "scope": {
+                "enum": [
+                  "mission",
+                  "task",
+                  "parallel_group",
+                  "skill_call"
+                ]
+              }
+            }
+          },
+          "actor": {
+            "properties": {
+              "actor_type": {
+                "enum": [
+                  "person",
+                  "service",
+                  "runtime_component"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "type": {
+                "const": "resume"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "channel": {
+                "enum": [
+                  "keyboard_binding",
+                  "local_ui",
+                  "remote_ui",
+                  "reserved_voice_grammar",
+                  "api",
+                  "runtime_internal"
+                ]
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "scope": {
+                "enum": [
+                  "mission",
+                  "task",
+                  "parallel_group",
+                  "skill_call"
+                ]
+              }
+            }
+          },
+          "actor": {
+            "properties": {
+              "actor_type": {
+                "enum": [
+                  "person",
+                  "service",
+                  "runtime_component"
+                ]
+              }
+            }
+          },
+          "expected_state_version": {
+            "type": "integer"
+          },
+          "expected_graph_version": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "type": {
+                "const": "request_status"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "channel": {
+                "enum": [
+                  "keyboard_binding",
+                  "local_ui",
+                  "remote_ui",
+                  "reserved_voice_grammar",
+                  "api",
+                  "wms",
+                  "runtime_internal"
+                ]
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "scope": {
+                "enum": [
+                  "robot",
+                  "mission",
+                  "task",
+                  "skill_call"
+                ]
+              }
+            }
+          },
+          "actor": {
+            "properties": {
+              "actor_type": {
+                "enum": [
+                  "person",
+                  "service",
+                  "runtime_component"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "type": {
+                "const": "answer_confirmation"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "channel": {
+                "enum": [
+                  "keyboard_binding",
+                  "local_ui",
+                  "remote_ui",
+                  "reserved_voice_grammar",
+                  "api"
+                ]
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "scope": {
+                "enum": [
+                  "confirmation_challenge"
+                ]
+              }
+            }
+          },
+          "actor": {
+            "properties": {
+              "actor_type": {
+                "enum": [
+                  "person",
+                  "service"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "type": {
+                "const": "set_speed_scale"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "channel": {
+                "enum": [
+                  "keyboard_binding",
+                  "local_ui",
+                  "remote_ui",
+                  "api",
+                  "runtime_internal"
+                ]
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "scope": {
+                "enum": [
+                  "robot",
+                  "mission",
+                  "task"
+                ]
+              }
+            }
+          },
+          "actor": {
+            "properties": {
+              "actor_type": {
+                "enum": [
+                  "person",
+                  "service",
+                  "runtime_component"
+                ]
+              }
+            }
+          },
+          "expected_state_version": {
+            "type": "integer"
+          },
+          "expected_graph_version": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "type": {
+                "const": "enter_teleop"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "channel": {
+                "enum": [
+                  "keyboard_binding",
+                  "local_ui",
+                  "remote_ui"
+                ]
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "scope": {
+                "const": "robot"
+              }
+            }
+          },
+          "actor": {
+            "properties": {
+              "actor_type": {
+                "const": "person"
+              }
+            }
+          },
+          "expected_state_version": {
+            "type": "integer"
+          },
+          "expected_graph_version": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "type": {
+                "const": "exit_teleop"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "channel": {
+                "enum": [
+                  "keyboard_binding",
+                  "local_ui",
+                  "remote_ui"
+                ]
+              }
+            }
+          },
+          "target": {
+            "properties": {
+              "scope": {
+                "const": "teleop_session"
+              }
+            }
+          },
+          "actor": {
+            "properties": {
+              "actor_type": {
+                "const": "person"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

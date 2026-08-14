@@ -123,11 +123,15 @@
       ]
     },
     "plan_patch": {
-      "type": "array",
-      "maxItems": 16,
-      "items": {
-        "$ref": "#/$defs/planPatchOperation"
-      }
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "urn:longship:schema:mission-task-graph-patch:v1"
+        }
+      ],
+      "description": "Optional pending-only graph patch bound to graph, state, and active-Skill-set versions."
     },
     "memory_proposals": {
       "type": "array",
@@ -377,45 +381,6 @@
         }
       },
       "description": "A non-authoritative request for Runtime/Safety review. Operator and watchdog stop paths use SafetyStopRequest and never wait for this proposal."
-    },
-    "planPatchOperation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "operation_id",
-        "operation",
-        "target_step_id",
-        "payload",
-        "reason_code"
-      ],
-      "properties": {
-        "operation_id": {
-          "$ref": "#/$defs/id"
-        },
-        "operation": {
-          "enum": [
-            "add_pending_step",
-            "replace_pending_step",
-            "remove_pending_step",
-            "reorder_pending_step"
-          ]
-        },
-        "target_step_id": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "payload": {
-          "type": "object",
-          "description": "Validated as a pending-only MissionTaskGraph patch before acceptance; running or terminal nodes cannot be rewritten."
-        },
-        "reason_code": {
-          "$ref": "#/$defs/id"
-        }
-      }
     },
     "memoryProposal": {
       "type": "object",

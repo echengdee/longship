@@ -54,18 +54,29 @@
         "safety.stop_requested",
         "safety.stop_commanded",
         "safety.motion_ceased",
+        "safety.safe_state_verified",
         "safety.stop_timeout",
         "safety.protective_stop",
         "safety.emergency_stop",
         "model.resolve_started",
+        "model.resolve_failed",
         "model.warm_started",
+        "model.warm_passed",
+        "model.warm_failed",
         "model.shadow_started",
+        "model.shadow_passed",
+        "model.shadow_failed",
         "model.handoff_requested",
         "model.safe_point_reached",
-        "model.lock_activated",
+        "model.handoff_completed",
+        "model.handoff_failed",
+        "model.canary_started",
+        "model.canary_passed",
         "model.canary_failed",
+        "model.binding_committed",
         "model.rollback_started",
         "model.rollback_completed",
+        "model.lock_snapshot_published",
         "component.health_changed"
       ]
     },
@@ -210,6 +221,9 @@
           ]
         },
         "model_session_id": {
+          "$ref": "#/$defs/id"
+        },
+        "model_binding_id": {
           "$ref": "#/$defs/id"
         }
       }

@@ -45,7 +45,7 @@
       "$ref": "#/$defs/taskState"
     },
     "execution_snapshot": {
-      "$ref": "execution-snapshot.v1.schema.json",
+      "$ref": "urn:longship:schema:execution-snapshot:v1",
       "description": "Authoritative snapshot; raw high-rate telemetry is not included."
     },
     "relevant_world_facts": {

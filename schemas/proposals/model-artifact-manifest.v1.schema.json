@@ -38,13 +38,13 @@
     "role": {
       "enum": [
         "brain",
-        "tts",
-        "asr",
         "dialogue",
+        "asr",
+        "tts",
+        "perception",
         "vla_policy",
         "locomotion_policy",
         "whole_body_tracking",
-        "perception",
         "world_model"
       ]
     },
@@ -232,7 +232,15 @@
           "$ref": "#/$defs/id"
         },
         "action_space_id": {
-          "$ref": "#/$defs/id"
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/id"
+            }
+          ],
+          "description": "Required for action-producing roles and null for non-actuating roles."
         }
       }
     },
@@ -434,6 +442,11 @@
         "output_authority": {
           "enum": [
             "high_level_proposal",
+            "dialogue_response",
+            "transcript",
+            "speech_output",
+            "perception_observation",
+            "world_prediction",
             "bounded_action_chunk",
             "trajectory_reference"
           ]
@@ -447,14 +460,19 @@
           "minimum": 0
         },
         "requires_policy_guard": {
-          "const": true
+          "type": "boolean"
         },
         "requires_target_qualification": {
-          "const": true
+          "type": "boolean"
         },
         "fallback_policy": {
           "enum": [
             "qualified_fallback_only",
+            "continue_without_role",
+            "disable_role",
+            "keyboard_only",
+            "caption_only",
+            "pause_dependent_tasks",
             "hold_then_stop",
             "immediate_safe_stop"
           ]
@@ -504,5 +522,337 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "enum": [
+              "vla_policy",
+              "locomotion_policy",
+              "whole_body_tracking"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "interface": {
+            "properties": {
+              "action_space_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          },
+          "safety": {
+            "properties": {
+              "output_authority": {
+                "enum": [
+                  "bounded_action_chunk",
+                  "trajectory_reference"
+                ]
+              },
+              "requires_policy_guard": {
+                "const": true
+              },
+              "requires_target_qualification": {
+                "const": true
+              },
+              "fallback_policy": {
+                "enum": [
+                  "qualified_fallback_only",
+                  "hold_then_stop",
+                  "immediate_safe_stop"
+                ]
+              },
+              "max_action_horizon_ms": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "brain"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "interface": {
+            "properties": {
+              "action_space_id": {
+                "type": "null"
+              }
+            }
+          },
+          "safety": {
+            "properties": {
+              "output_authority": {
+                "const": "high_level_proposal"
+              },
+              "max_action_horizon_ms": {
+                "const": 0
+              },
+              "requires_policy_guard": {
+                "const": false
+              },
+              "fallback_policy": {
+                "enum": [
+                  "qualified_fallback_only",
+                  "continue_without_role",
+                  "disable_role",
+                  "keyboard_only",
+                  "caption_only",
+                  "pause_dependent_tasks"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "dialogue"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "interface": {
+            "properties": {
+              "action_space_id": {
+                "type": "null"
+              }
+            }
+          },
+          "safety": {
+            "properties": {
+              "output_authority": {
+                "const": "dialogue_response"
+              },
+              "max_action_horizon_ms": {
+                "const": 0
+              },
+              "requires_policy_guard": {
+                "const": false
+              },
+              "fallback_policy": {
+                "enum": [
+                  "qualified_fallback_only",
+                  "continue_without_role",
+                  "disable_role",
+                  "keyboard_only",
+                  "caption_only",
+                  "pause_dependent_tasks"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "asr"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "interface": {
+            "properties": {
+              "action_space_id": {
+                "type": "null"
+              }
+            }
+          },
+          "safety": {
+            "properties": {
+              "output_authority": {
+                "const": "transcript"
+              },
+              "max_action_horizon_ms": {
+                "const": 0
+              },
+              "requires_policy_guard": {
+                "const": false
+              },
+              "fallback_policy": {
+                "enum": [
+                  "qualified_fallback_only",
+                  "continue_without_role",
+                  "disable_role",
+                  "keyboard_only",
+                  "caption_only",
+                  "pause_dependent_tasks"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "tts"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "interface": {
+            "properties": {
+              "action_space_id": {
+                "type": "null"
+              }
+            }
+          },
+          "safety": {
+            "properties": {
+              "output_authority": {
+                "const": "speech_output"
+              },
+              "max_action_horizon_ms": {
+                "const": 0
+              },
+              "requires_policy_guard": {
+                "const": false
+              },
+              "fallback_policy": {
+                "enum": [
+                  "qualified_fallback_only",
+                  "continue_without_role",
+                  "disable_role",
+                  "keyboard_only",
+                  "caption_only",
+                  "pause_dependent_tasks"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "perception"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "interface": {
+            "properties": {
+              "action_space_id": {
+                "type": "null"
+              }
+            }
+          },
+          "safety": {
+            "properties": {
+              "output_authority": {
+                "const": "perception_observation"
+              },
+              "max_action_horizon_ms": {
+                "const": 0
+              },
+              "requires_policy_guard": {
+                "const": false
+              },
+              "fallback_policy": {
+                "enum": [
+                  "qualified_fallback_only",
+                  "continue_without_role",
+                  "disable_role",
+                  "keyboard_only",
+                  "caption_only",
+                  "pause_dependent_tasks"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "world_model"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "interface": {
+            "properties": {
+              "action_space_id": {
+                "type": "null"
+              }
+            }
+          },
+          "safety": {
+            "properties": {
+              "output_authority": {
+                "const": "world_prediction"
+              },
+              "max_action_horizon_ms": {
+                "const": 0
+              },
+              "requires_policy_guard": {
+                "const": false
+              },
+              "fallback_policy": {
+                "enum": [
+                  "qualified_fallback_only",
+                  "continue_without_role",
+                  "disable_role",
+                  "keyboard_only",
+                  "caption_only",
+                  "pause_dependent_tasks"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

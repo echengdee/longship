@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:mission-task-graph-patch:v1",
+  "title": "MissionTaskGraphPatch",
+  "description": "Draft compare-and-swap patch for pending MissionTaskGraph nodes, edges, barriers, and admission groups. Runtime rejects changes to running, terminal, or side-effecting work.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "patch_id",
+    "graph_id",
+    "base_graph_version",
+    "proposed_graph_version",
+    "based_on_state_version",
+    "based_on_active_skill_set_version",
+    "correlation_id",
+    "issued_at",
+    "valid_until",
+    "operations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.mission-task-graph-patch.v1"
+    },
+    "patch_id": {
+      "$ref": "#/$defs/id"
+    },
+    "graph_id": {
+      "$ref": "#/$defs/id"
+    },
+    "base_graph_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "proposed_graph_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "based_on_state_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "based_on_active_skill_set_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/addNode"
+          },
+          {
+            "$ref": "#/$defs/replaceNode"
+          },
+          {
+            "$ref": "#/$defs/removeNode"
+          },
+          {
+            "$ref": "#/$defs/addEdge"
+          },
+          {
+            "$ref": "#/$defs/removeEdge"
+          },
+          {
+            "$ref": "#/$defs/addAdmissionGroup"
+          },
+          {
+            "$ref": "#/$defs/replaceAdmissionGroup"
+          },
+          {
+            "$ref": "#/$defs/removeAdmissionGroup"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "node": {
+      "oneOf": [
+        {
+          "$ref": "urn:longship:schema:mission-task-graph:v1#/$defs/skillNode"
+        },
+        {
+          "$ref": "urn:longship:schema:mission-task-graph:v1#/$defs/barrierNode"
+        }
+      ]
+    },
+    "addNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "op",
+        "reason_code",
+        "node"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "const": "add_pending_node"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        },
+        "node": {
+          "$ref": "#/$defs/node"
+        }
+      }
+    },
+    "replaceNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "op",
+        "reason_code",
+        "target_node_id",
+        "node"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "const": "replace_pending_node"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        },
+        "target_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "node": {
+          "$ref": "#/$defs/node"
+        }
+      }
+    },
+    "removeNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "op",
+        "reason_code",
+        "target_node_id"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "const": "remove_pending_node"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        },
+        "target_node_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "addEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "op",
+        "reason_code",
+        "edge"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "const": "add_edge"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        },
+        "edge": {
+          "$ref": "urn:longship:schema:mission-task-graph:v1#/$defs/edge"
+        }
+      }
+    },
+    "removeEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "op",
+        "reason_code",
+        "target_edge_id"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "const": "remove_edge"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        },
+        "target_edge_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "addAdmissionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "op",
+        "reason_code",
+        "admission_group"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "const": "add_admission_group"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        },
+        "admission_group": {
+          "$ref": "urn:longship:schema:mission-task-graph:v1#/$defs/admissionGroup"
+        }
+      }
+    },
+    "replaceAdmissionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "op",
+        "reason_code",
+        "target_group_id",
+        "admission_group"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "const": "replace_admission_group"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        },
+        "target_group_id": {
+          "$ref": "#/$defs/id"
+        },
+        "admission_group": {
+          "$ref": "urn:longship:schema:mission-task-graph:v1#/$defs/admissionGroup"
+        }
+      }
+    },
+    "removeAdmissionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "op",
+        "reason_code",
+        "target_group_id"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "const": "remove_admission_group"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        },
+        "target_group_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    }
+  }
+}

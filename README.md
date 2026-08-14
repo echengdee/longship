@@ -98,6 +98,7 @@ Planned core contracts include:
 | `RuntimeControlCommand` | A deterministic pause, resume, cancel, status, speed, or mode command that bypasses Brain providers |
 | `SafetyStopRequest` | A protective-stop request on the local Safety path; physical E-stop remains independent |
 | `MissionTaskGraph` | A parallel DAG with resources, barriers, preemption, and cancellation |
+| `MissionTaskGraphPatch` | A typed, version-bound update to pending graph structure |
 | `ModelSessionLock` | Immutable role-scoped model bindings and handoff policy |
 | `CommandEnvelope` | A bounded target command with ownership, validity, and expiry |
 | `ExperienceEpisode` | Context, actions, outcomes, failures, recovery, and evidence |

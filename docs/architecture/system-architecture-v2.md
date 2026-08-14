@@ -82,7 +82,9 @@ flowchart TB
     ControlCheck --> Runtime
 
     Route -->|reserved STOP| Stop["Local Stop Dispatcher<br/>no model or safe-point wait"]
-    Physical["Physical emergency stop"] --> Safety["Independent Safety Kernel"]
+    Physical["Physical emergency stop"] --> HardStop["Safety-rated stop circuit<br/>or drive disable"]
+    HardStop --> Target
+    HardStop -. "status feedback only" .-> Safety["Independent Safety Kernel"]
     Stop --> Safety
 
     Runtime --> Scheduler["Parallel DAG Scheduler<br/>resources + barriers + cancellation"]
@@ -92,7 +94,8 @@ flowchart TB
 
     Motion --> Arbiter["Command Arbiter"]
     Arbiter --> Safety
-    Safety --> Target["Embodiment Adapter + Robot or Simulator"]
+    Safety --> Adapter["Embodiment Adapter"]
+    Adapter --> Target["Robot or Simulator"]
 
     Runtime --> Events["Authoritative Runtime Events"]
     Safety --> Events
@@ -190,9 +193,11 @@ motor.
 ### 6.2 Observability and experience plane
 
 This plane collects state, events, diagnostics, media references, and model
-routing metadata. It serves live views and reproducible replay. It is read-only
-with respect to robot control; UI buttons submit a new `OperatorIntent` through
-the Interaction Gateway.
+routing metadata. It serves live views and reproducible replay and has no direct
+actuator authority. UI controls return through the Interaction Gateway, but
+their contract depends on intent: semantic input emits `OperatorIntent`;
+pause, resume, cancel, status, speed, confirmation, and mode controls emit
+`RuntimeControlCommand`; protective stop emits `SafetyStopRequest`.
 
 ### 6.3 Safety and governance plane
 
@@ -225,8 +230,8 @@ decision ID are recorded by the gateway rather than trusted from model output.
 ### 7.1 Role-scoped concurrent model sessions
 
 Longship does not have one global "current model." The Model Session Manager
-resolves an immutable `ModelSessionLock` with at most one active binding per
-role:
+resolves an immutable `ModelSessionLock` audit snapshot with at most one
+active binding per role:
 
 | Role | Responsibility | Normal handoff boundary |
 | --- | --- | --- |
@@ -251,18 +256,24 @@ cannot approve an action or grant itself a resource lease. Every action-bearing
 result is correlated with the lock, session, observation, lease, sequence,
 deadline, and expiry.
 
-A model change follows:
+Each role binding has an independent immutable identity, revision, digest,
+deployment lock, handoff-gate profile, predecessor, and rollback target. The
+aggregate lock is an audit snapshot: changing TTS does not make an unchanged
+locomotion binding stale.
+
+A model change follows the binding's immutable pass/fail gates:
 
 ```text
-resolve -> verify -> warm -> shadow -> ready -> wait for role safe point
-        -> drain old session -> atomic lock and lease handoff
-        -> canary -> commit or deterministic rollback
+resolve -> verify -> warm gate -> shadow gate -> wait for role safe point
+        -> drain old session -> atomic role-binding and lease handoff
+        -> canary gate -> commit binding or deterministic role rollback
 ```
 
-Candidate output is discarded during warm and shadow phases. The previous
-qualified lock remains authoritative and rollback-ready until canary succeeds.
-Canonical Longship state is transferred across providers; opaque vendor session
-state never becomes the robot's source of truth.
+Candidate output is discarded during warm and shadow phases. Action roles
+require nonzero warm, shadow, and canary gates. The previous qualified binding
+remains authoritative and rollback-ready until canary succeeds. Canonical
+Longship state is transferred across providers; opaque vendor session state
+never becomes the robot's source of truth.
 
 ### 7.2 Decision continuity and anti-flapping
 
@@ -311,7 +322,9 @@ serial even when Skills execute in parallel. The default while valid work is
 active is `continue_active_skill` for the foreground call or
 `wait_for_event`; auxiliary calls continue under the graph. A new Skill,
 cancellation, or graph replacement requires an allowed material trigger and,
-where required, a declared safe point. Patches may modify pending nodes only;
+where required, a declared safe point. `MissionTaskGraphPatch` makes each
+proposed node, edge, barrier, or admission-group change explicit and binds it to `base_graph_version`, the current Runtime state
+version, and the active-Skill-set version. Patches may modify pending nodes only;
 they cannot rewrite running or terminal nodes.
 
 The provider gateway assigns or verifies IDs and timestamps. Runtime issues
@@ -329,7 +342,9 @@ Draft contracts:
 
 - `ExecutionSnapshot` is the authoritative graph and active-Skill-set fact source;
 - `BrainRequest` is bounded, event-driven context; and
-- `BrainDecision` is a version-bound high-level proposal.
+- `BrainDecision` is a version-bound high-level proposal; and
+- `MissionTaskGraphPatch` is a typed, expiring, pending-only graph update with
+  compare-and-swap preconditions.
 
 ### 7.3 Large model and framework integration
 
@@ -374,9 +389,13 @@ emergency-stop input remains outside these application contracts.
 
 ### 8.2 Stop, acknowledgement, and manual control
 
-A protective stop bypasses the Brain, task compiler, DAG scheduler, ordinary
-resource queues, Skill safe points, TTS, observability, and external network
-dependencies. Safety selects the target-qualified stop profile, revokes motion
+After a stop is recognized at the robot-side gateway, dispatch bypasses the
+Brain, task compiler, DAG scheduler, ordinary resource queues, Skill safe
+points, TTS, observability, and cloud services. A remote stop request still
+incurs transport latency before robot-side recognition; that latency is measured
+separately. Local protective stop and physical emergency-stop paths do not
+depend on an external network. Safety selects the target-qualified stop
+profile, revokes motion
 leases, issues the stop, and measures the outcome. Software cannot clear a
 physical emergency stop or a latched protective stop merely by receiving
 `resume`.
@@ -396,9 +415,17 @@ braking latency  = t3 - t2
 safe-state time  = t4 - t0
 ```
 
+These differences are valid only after all timestamps are expressed in one
+declared monotonic clock domain, or in synchronized domains with a recorded
+worst-case clock-error bound. `ControlCommandResult` records the clock domain,
+relation, error bound, and the Safety-resolved stop profile. Unsynchronized
+timestamps remain useful as ordered local evidence but cannot support
+cross-process latency subtraction.
+
 `accepted` means only that the request was received. The robot may immediately
-display or say "Stopping." It may say "Stopped" only after `t3`, or `t4` when
-the target policy requires full safe-state verification. Missing a
+display or say "Stopping." It may say "Stopped" after `t3` only when the
+resolved target stop profile defines motion cessation as sufficient; profiles
+that require a verified safe state must wait for `t4`. Missing a
 target-specific deadline emits `safety.stop_timeout` and triggers the
 qualified escalation path. Target qualification records worst-case dispatch,
 command, braking, stopping-distance, and safe-state bounds rather than relying
@@ -432,8 +459,10 @@ two writers for base or the same arm may not overlap
 ```
 
 An edge may release a dependent node after admission, start, success, failure,
-cancellation, or any terminal outcome. Admission groups coordinate nodes that
-should start together. Barrier nodes declare `all_succeeded`,
+cancellation, or any terminal outcome. `all_or_none` admission groups
+atomically acquire the union of member resource claims before any member starts; `best_effort` groups admit compatible members
+deterministically. Admission groups coordinate nodes that should start
+together. Barrier nodes declare `all_succeeded`,
 `all_terminal`, `any_succeeded`, or a quorum, plus a deadline and timeout
 behavior. A speech node blocks mission completion only when
 `required_for_completion=true`.
@@ -477,10 +506,18 @@ when the deterministic control or safety route accepts the resulting command.
 TTS completion is never allowed to block a control loop, and an announcement is
 never evidence that a physical transition completed.
 
-## 9. Transactional task switching
+## 9. Transactional task and graph switching
 
-A new task does not replace a running task immediately. Runtime performs a
-transactional switch at an explicit skill safe point.
+A new task or graph revision does not replace running work immediately. Runtime
+first freezes admission of affected pending nodes and creates one versioned,
+aggregate switch barrier containing:
+
+- the expected graph and active-Skill-set versions;
+- every affected call ID and resource owner;
+- one cancellation epoch;
+- the required safe-point code for each actuator Skill;
+- a barrier deadline; and
+- the qualified timeout fallback.
 
 ```mermaid
 stateDiagram-v2
@@ -489,9 +526,10 @@ stateDiagram-v2
     Validating --> Rejected: invalid or unauthorized
     Validating --> NeedsConfirmation: ambiguous or high risk
     NeedsConfirmation --> Validating: confirmed
-    Validating --> PausingCurrent: accepted
-    PausingCurrent --> WaitingSafePoint
-    WaitingSafePoint --> ReleasingResources: safe point reached
+    Validating --> FreezingAdmission: accepted
+    FreezingAdmission --> WaitingSwitchBarrier
+    WaitingSwitchBarrier --> ReleasingResources: every affected call is safe in the same barrier epoch
+    WaitingSwitchBarrier --> SafeStopped: deadline exceeded; qualified fallback
     ReleasingResources --> PreflightNew
     PreflightNew --> RunningNew: checks pass
     PreflightNew --> RestoringPrevious: checks fail
@@ -499,12 +537,22 @@ stateDiagram-v2
     RestoringPrevious --> SafeStopped: rollback unavailable
 ```
 
-A safe point is declared by the skill contract. Examples include stopped base
-motion, supported payload, no active contact transition, and bounded actuator
-state. Runtime never switches in the middle of an indivisible motion or contact
-action. These rules apply to ordinary task changes and model handoffs. A
-protective stop is different: it bypasses safe-point waiting and immediately
-invokes the target-qualified stop profile.
+Each safe point is declared by its Skill contract and bound to the current call,
+state version, and cancellation epoch. Examples include stopped base motion,
+supported payload, no active contact transition, and bounded actuator state.
+The switch barrier releases only when all affected actuator owners satisfy
+their required safe points and conflicting leases can be released atomically.
+Speech, perception, and monitoring nodes may continue, cancel, or drain
+according to their own scopes when they hold no affected actuator resource.
+
+A Skill that never reaches its safe point cannot leave the switch pending
+forever. At the barrier deadline Runtime applies the declared target-qualified
+fallback—normally hold, stand, or protective stop—records the failed switch,
+and either restores the previous graph or remains safe-stopped.
+
+These rules apply to ordinary task changes and model handoffs. A protective
+stop is different: it bypasses the switch barrier and immediately invokes the
+Safety-resolved target-qualified stop profile.
 
 ## 10. Human-readable announcements
 
@@ -521,7 +569,8 @@ It never announces model predictions as completed physical actions.
 | `operator.help_required` | "I need help clearing the destination." | Persistent alert |
 | `task.completed` | "The box has been placed at the destination." | Only after success evidence |
 | `safety.stop_requested` | "I am stopping." | Immediate high-priority local template |
-| `safety.motion_ceased` | "I have stopped. Please keep the area clear." | Only after measured stop evidence |
+| `safety.motion_ceased` | "Motion has ceased." | May confirm "Stopped" only if the resolved profile treats `t3` as terminal |
+| `safety.safe_state_verified` | "I have stopped. Please keep the area clear." | Required when the resolved profile gates completion on `t4` |
 
 Safety and task-transition messages use deterministic, localized templates.
 An LLM may optionally paraphrase noncritical explanations, but it cannot remove
@@ -529,7 +578,8 @@ required facts, lower severity, or delay delivery. Voice, captions, UI, lights,
 and remote notifications share one event source.
 
 Notification policy includes priority, deduplication, cooldown, interruption,
-quiet mode, localization, and accessibility. Critical local alerts preempt noncritical speech, and a protective stop cancels
+quiet mode, localization, and accessibility. Critical local alerts preempt
+noncritical speech, and a protective stop cancels
 or ducks ordinary TTS without delaying Safety. Mission `say` Skills may overlap
 motion when leases are compatible. TTS failure falls back to captions and
 visible status; failure of all notification outputs does not change Safety
@@ -601,7 +651,10 @@ rules; the robot says that a value is unavailable instead of inventing it.
 - camera and sensor timestamps, frame drops, and calibration version;
 - battery, thermal, compute, storage, and process health;
 - network latency, loss, reconnects, and middleware health;
-- model lock, role, session, provider, artifact and adapter versions, warm/shadow/handoff state, inference latency, retries, lease scope, and validation outcome; and
+- aggregate model lock, role binding ID and revision, session, provider,
+  deployment lock, gate profile, artifact and adapter versions,
+  warm/shadow/handoff/canary state, inference latency, retries, lease scope, and
+  validation outcome; and
 - synchronized event timeline, logs, traces, media, and version comparison.
 
 Browser clients never publish directly to robot middleware. Any operator action
@@ -663,6 +716,7 @@ it cannot mark that lesson active.
 | `SafetyStopRequest` | Idempotent protective-stop request on the deterministic local Safety path; not a physical emergency-stop protocol |
 | `ControlCommandResult` | Immutable acknowledgement and measured control/stop effect transitions |
 | `MissionTaskGraph` | Versioned parallel DAG, resources, barriers, preemption, and cancellation policy |
+| `MissionTaskGraphPatch` | Typed, expiring pending-only graph mutation bound to graph, state, and active-Skill-set versions |
 | `ExecutionSnapshot` | Authoritative active Skill set, graph state, foreground call, safe points, leases, versions, and Safety state |
 | `BrainRequest` | Bounded event-triggered context, current Skills, active execution, and relevant history |
 | `BrainDecision` | Version-bound, expiring high-level proposal with pending-only graph/plan patch |
@@ -679,7 +733,7 @@ it cannot mark that lesson active.
 | `ArtifactManifest` | Hash, provenance, license, compatibility, and storage URI |
 | `ModelArtifactManifest` | External weights, runtime, resources, licenses, interfaces, and safety envelope |
 
-The thirteen draft schemas in `schemas/proposals/` are discussion artifacts,
+The fourteen draft schemas in `schemas/proposals/` are discussion artifacts,
 not released compatibility guarantees. JSON Schema cannot prove graph acyclicity,
 reference existence, lease compatibility, monotonic cancellation, timestamp
 ordering, safe-point freshness, stop timing bounds, or atomic compare-and-swap;
@@ -710,7 +764,8 @@ Runtime and target qualification enforce those properties.
 
 ### Phase A: contracts and mock target
 
-- Validate all thirteen draft schemas and representative synthetic examples.
+- Validate all fourteen draft schemas and representative synthetic positive and
+  negative examples.
 - Map fixed keyboard bindings to `RuntimeControlCommand` and reserved `STOP`
   to `SafetyStopRequest`, with no Brain invocation.
 - Emit an immediate accepted result and a later measured effect result; verify
@@ -738,7 +793,8 @@ Runtime and target qualification enforce those properties.
 
 ### Phase C: one protected robot target
 
-- Add target-specific stop profiles and timing thresholds, manual supervision,
+- Add Safety-resolved target-specific stop profiles, shared or bounded-error
+  monotonic clock domains, timing thresholds, manual supervision,
   physical emergency stop, privacy review, and qualification gates.
 - Measure command recognition-to-acknowledgement, `t0` through `t4` stop
   timing, stopping distance, announcement correctness, stale-data detection,

@@ -146,11 +146,20 @@ integration. `ModelSessionLock` binds a compatible set of those immutable
 deployments to concurrent runtime roles such as Brain, dialogue, ASR, TTS,
 perception, VLA, locomotion, whole-body tracking, and world model.
 
-One lock revision is immutable. Changing any role creates the next revision
-with explicit `supersedes_lock_id` and `rollback_lock_id`. The lock declares
-the maximum permitted resource scope and handoff policy; it does not grant a
-live actuator lease. Runtime remains the lease authority. Lifecycle state is
-recorded as `RuntimeEvent`, not by mutating the lock.
+The complete lock is an immutable audit snapshot, not the freshness identity
+for every role. Each role binding has its own `binding_id`, revision, digest,
+`supersedes_binding_id`, and role-scoped rollback target. Unchanged bindings
+carry forward unchanged when another role switches, so replacing TTS cannot
+invalidate an in-flight locomotion result or roll back a later unrelated role.
+
+Every binding references an immutable deployment lock and its digest. That
+deployment lock transitively pins plugin and adapter bytes, artifacts, runtime
+image, target capability profile, and qualification evidence. The binding also
+pins a handoff-gate profile and digest containing warm, shadow, canary,
+divergence, deadline, abort, safe-point, and rollback criteria. The aggregate
+lock declares the maximum permitted resource scope and does not grant a live
+actuator lease. Runtime remains the lease authority. Lifecycle state is
+recorded as `RuntimeEvent`, not by mutating either lock or binding.
 
 ## 5. Resolution and cache lifecycle
 
@@ -224,25 +233,30 @@ sessions may overlap only when their target-qualified composition profile and
 Runtime leases are disjoint. Longship rejects implicit averaging or blending of
 two model outputs that claim the same actuator scope.
 
-A candidate session follows:
+A candidate role binding follows its immutable gate profile:
 
 ```text
-resolve -> hash and license verification -> load -> warm -> shadow
+resolve -> hash and license verification -> load -> warm gate -> shadow gate
         -> wait for role-specific safe point -> drain old session
-        -> compare-and-swap lock and leases -> short canary -> commit
+        -> compare-and-swap that role's binding and leases
+        -> canary gate -> commit binding or roll back that role
 ```
 
-Warm and shadow output is never forwarded to the robot. The old session remains
-authoritative until atomic handoff. For control-bearing sessions, rollback first
+Warm and shadow output is never forwarded to the robot. Action roles require
+nonzero warm, shadow, and canary gates and a qualified action boundary. The old
+binding remains authoritative until atomic handoff. Unrelated roles continue on
+their existing binding identities. For control-bearing sessions, rollback first
 revokes the candidate, applies a deterministic hold or stand profile, verifies
 state, and then reactivates a previously qualified lock at a safe point. Direct
 mid-motion policy flipping is prohibited unless that exact transfer path has
 been separately certified.
 
-Every action-bearing candidate includes `model_lock_id`,
-`model_session_id`, role, lease ID, sequence, observation version, deadline,
-and expiry. Arbitration rejects stale locks, stale leases, expired output, and
-scope conflicts.
+Every action-bearing candidate includes `model_binding_id`,
+`model_session_id`, role, deployment-lock digest, lease ID, sequence,
+observation version, deadline, and expiry. The aggregate `model_lock_id` may
+be recorded for audit but is not used to invalidate an unchanged role.
+Arbitration rejects stale role bindings, stale leases, expired output, and
+scope conflicts. Compare-and-swap and rollback are role-scoped.
 
 ## 7. Deployment profiles
 
@@ -395,8 +409,9 @@ Public pull-request CI must remain small and deterministic:
 - use a fake brain and fake policy backend;
 - test timeouts, stale output, cancellation, hash mismatch, missing access,
   resource exhaustion, conflicting model leases, and immutable-lock CAS;
-- test warm, shadow, safe-point handoff, candidate rejection, canary failure,
-  and rollback with fake providers;
+- test warm/shadow/canary gate pass and failure, role-scoped safe-point
+  handoff, candidate rejection, unrelated-role continuity, and rollback with
+  fake providers;
 - confirm that no test downloads a large artifact by default; and
 - confirm that model failure cannot bypass Safety or block safe stop.
 
@@ -425,8 +440,9 @@ target, skill, and safety envelope. Otherwise Runtime pauses or safe-stops.
 The monitoring system exposes:
 
 - resolver state, source, bytes downloaded, cache use, and verification result;
-- loaded plugin, source revision, artifact digests, deployment lock, model
-  session lock, role, session, and permitted versus active resource scope;
+- loaded plugin, source revision, artifact digests, deployment lock, aggregate
+  session lock, role binding ID and revision, session, gate profile, and
+  permitted versus active resource scope;
 - load and warm-up time, CPU/GPU memory, inference latency, deadline misses,
   output age, and queue depth;
 - observation version, decision or skill call ID, action horizon, and guard
@@ -447,13 +463,16 @@ An adapter proposal is not ready to merge until:
 3. its input, output, frames, units, state version, and expiry are testable;
 4. cancellation, stale output, network loss, and resource failure are defined;
 5. public CI runs without downloading the real model;
-6. concurrent roles have no implicit output blending or conflicting actuator
-   ownership;
-7. role-specific warm, shadow, handoff, canary, and rollback behavior is
+6. each binding references an immutable deployment lock and a hashed handoff
+   gate profile;
+7. concurrent roles have no implicit output blending, conflicting actuator
+   ownership, or global-lock invalidation of unchanged roles;
+8. action roles prohibit zero-gate or immediate handoff;
+9. role-scoped warm, shadow, handoff, canary, commit, and rollback outcomes are
    reproducible with a fake provider;
-8. the target and safety boundary remain independently testable; and
-9. qualification and rollback evidence can be reproduced from external
-   artifact references.
+10. the target and safety boundary remain independently testable; and
+11. qualification and rollback evidence can be reproduced from external
+    artifact references.
 
 Longship integrates large intelligence by pinning and governing it—not by
 turning the source repository into a model warehouse.
