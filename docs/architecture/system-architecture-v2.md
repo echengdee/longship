@@ -185,6 +185,86 @@ canonical `TaskState`; it cannot inherit hidden authority from the previous
 provider. Provider name, model identifier, adapter version, latency, and
 decision ID are recorded by the gateway rather than trusted from model output.
 
+### 7.1 Decision continuity and anti-flapping
+
+Runtime, not the model provider, constructs a `BrainRequest` from canonical
+state. It includes the task and plan version, current `ExecutionSnapshot`,
+previous accepted decision, active Skill call, safe point, resource leases,
+qualified Skill descriptors, recent material events, and a small set of
+relevant historical episode summaries.
+
+Context is layered:
+
+1. authoritative task, execution, and world-state facts are always present;
+2. the active Skill, resources, and previous accepted decision are always
+   present;
+3. recent history is a bounded event window; and
+4. older experience is retrieved by relevance as summaries and immutable
+   references.
+
+Raw chat history, full logs, video bytes, and high-rate joint streams are not
+used as state. When history conflicts with the current snapshot, the current
+versioned snapshot wins.
+
+A Brain request is created only for a deduplicated material trigger: new goal,
+terminal Skill result, declared safe point, significant world change, operator
+interrupt, exhausted recovery budget, safety follow-up, invalid plan, or
+deadline. Progress and telemetry events do not invoke the Brain by default.
+
+`BrainDecision` is a proposal with compare-and-swap conditions. Before
+acceptance, Runtime atomically verifies:
+
+```text
+trigger ID and dedupe key
++ request decision idempotency key
++ execution snapshot ID
++ state version
++ plan version
++ expected previous decision ID
++ expected active Skill call ID
++ expected safe-point ID
++ decision expiry
+```
+
+A mismatch rejects the proposal without side effects. The default while a
+valid Skill is active is `continue_active_skill` or `wait_for_event`. A new
+Skill, cancellation, or plan replacement requires an allowed material trigger
+and, where required, a declared safe point. Plan patches may modify pending
+steps only; they cannot rewrite running or terminal steps.
+
+The provider gateway assigns or verifies IDs and timestamps. Runtime issues
+resource leases and accepted Skill call IDs. Model-generated Skill arguments
+are validated again against the selected semantic Skill input schema. Generic
+shell, SDK, joint, torque, motor, or trajectory tools are never exposed to the
+Brain.
+
+Debounce, minimum hold time, bounded retry and replan budgets, and per-trigger
+idempotency further reduce oscillation. These stability rules never delay the
+independent Safety Kernel.
+
+Draft contracts:
+
+- `ExecutionSnapshot` is the authoritative execution fact source;
+- `BrainRequest` is bounded, event-driven context; and
+- `BrainDecision` is a version-bound high-level proposal.
+
+### 7.2 Large model and framework integration
+
+Longship keeps adapters and manifests in Git while weights, checkpoints,
+datasets, and runtime images remain in external registries. Deployment resolves
+immutable hashes into a local cache before a mission and never downloads a
+model while the robot is moving.
+
+GR00T and UnifoLM are treated as optional VLA policy providers. Holosoma is
+treated as a training/deployment framework whose exported checkpoints are
+versioned separately. Unitree is treated as a target SDK and embodiment
+adapter; using a Unitree policy requires an additional policy manifest and
+qualification.
+
+See [Model, Framework, and Artifact Integration](model-and-artifact-integration.md)
+for repository layout, artifact resolution, license gates, caching, inference
+boundaries, CI, observability, and target-scoped promotion.
+
 ## 8. Voice and keyboard interaction
 
 ### 8.1 One semantic ingress
@@ -403,6 +483,9 @@ it cannot mark that lesson active.
 | Contract | Authority and purpose |
 | --- | --- |
 | `OperatorIntent` | Normalized, attributable human or system intent; never low-level control |
+| `ExecutionSnapshot` | Authoritative active Skill, safe point, leases, versions, and safety state |
+| `BrainRequest` | Bounded event-triggered context, current skills, and relevant history |
+| `BrainDecision` | Version-bound, expiring high-level proposal with incremental plan patch |
 | `TaskDraft` | Untrusted brain proposal |
 | `MissionContract` | Validated executable task and constraints |
 | `SkillContract` | Bounded capability, safe points, cancellation, evidence, and risk |
@@ -413,6 +496,7 @@ it cannot mark that lesson active.
 | `ExperienceEpisode` | Structured execution evidence and artifact index |
 | `EvaluationResult` | Reproducible metrics and promotion decision |
 | `ArtifactManifest` | Hash, provenance, license, compatibility, and storage URI |
+| `ModelArtifactManifest` | External weights, runtime, resources, licenses, interfaces, and safety envelope |
 
 The first draft schemas in `schemas/proposals/` are discussion artifacts, not
 released compatibility guarantees.
@@ -438,12 +522,14 @@ released compatibility guarantees.
 
 ### Phase A: contracts and mock target
 
-- Validate the four draft schemas and representative examples.
+- Validate the eight draft schemas and representative examples.
 - Normalize keyboard input into `OperatorIntent`.
 - Execute task lifecycle and switching on a mock target.
 - Generate deterministic announcements from `RuntimeEvent`.
 - Render synthetic joint, pose, thermal, camera-metadata, and communication
   telemetry.
+- Exercise decision deduplication, compare-and-swap rejection, sticky active
+  Skills, and a mock artifact resolver without downloading model weights.
 
 ### Phase B: local voice and engineering replay
 
@@ -466,6 +552,10 @@ An initial vertical slice should use a small semantic skill set—such as `say`,
 adding more model providers or embodiments.
 
 ## 16. Non-normative open-source implementation candidates
+
+Heavy model and target integrations are governed by the separate
+[model and artifact integration proposal](model-and-artifact-integration.md).
+The following tools remain optional observability and storage candidates:
 
 Longship contracts should not depend on these projects, but adapters may use:
 

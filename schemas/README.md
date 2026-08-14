@@ -20,7 +20,8 @@ discussions and include compatibility tests before becoming stable.
 
 ## Draft Proposals
 
-The first public discussion drafts cover operator intent, runtime events,
-telemetry, and structured experience. See
+The first eight public discussion drafts cover operator intent, stable brain
+decisions, execution state, runtime events, telemetry, structured experience,
+and external model artifacts. See
 [`schemas/proposals/README.md`](proposals/README.md). These files may change
 incompatibly until a stable contract release is declared.

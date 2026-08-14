@@ -1,0 +1,441 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:brain-decision:v1",
+  "title": "BrainDecision",
+  "description": "Draft high-level proposal. Runtime validation and Safety determine whether any proposed transition is accepted.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "request_id",
+    "correlation_id",
+    "responding_to_trigger_id",
+    "decision_idempotency_key",
+    "expected_previous_decision_id",
+    "expected_execution_snapshot_id",
+    "expected_active_skill_call_id",
+    "expected_safe_point_id",
+    "based_on_state_version",
+    "based_on_plan_version",
+    "issued_at",
+    "valid_until",
+    "decision_summary",
+    "change_reason",
+    "confidence",
+    "next_action",
+    "plan_patch",
+    "memory_proposals"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.brain-decision.v1"
+    },
+    "decision_id": {
+      "$ref": "#/$defs/id",
+      "description": "Assigned or verified by the provider gateway; the model is not an identity authority."
+    },
+    "request_id": {
+      "$ref": "#/$defs/id"
+    },
+    "expected_execution_snapshot_id": {
+      "$ref": "#/$defs/id"
+    },
+    "expected_active_skill_call_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "based_on_state_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "based_on_plan_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Assigned or verified by the provider gateway."
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Bounded by the request deadline and verified by Runtime."
+    },
+    "decision_summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Concise auditable explanation; hidden chain-of-thought is not requested."
+    },
+    "change_reason": {
+      "enum": [
+        "no_material_change",
+        "new_goal",
+        "skill_succeeded",
+        "skill_failed",
+        "significant_world_change",
+        "operator_interrupt",
+        "recovery_budget_exhausted",
+        "safety_followup",
+        "plan_invalid"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "next_action": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/waitForEvent"
+        },
+        {
+          "$ref": "#/$defs/continueActiveSkill"
+        },
+        {
+          "$ref": "#/$defs/callSkill"
+        },
+        {
+          "$ref": "#/$defs/requestCancel"
+        },
+        {
+          "$ref": "#/$defs/replan"
+        },
+        {
+          "$ref": "#/$defs/askOperator"
+        },
+        {
+          "$ref": "#/$defs/complete"
+        },
+        {
+          "$ref": "#/$defs/safeStop"
+        }
+      ]
+    },
+    "plan_patch": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/planPatchOperation"
+      }
+    },
+    "memory_proposals": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/memoryProposal"
+      }
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "responding_to_trigger_id": {
+      "$ref": "#/$defs/id"
+    },
+    "decision_idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Must exactly echo BrainRequest.decision_idempotency_key."
+    },
+    "expected_previous_decision_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "expected_safe_point_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "waitForEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "expected_event_types"
+      ],
+      "properties": {
+        "action": {
+          "const": "wait_for_event"
+        },
+        "expected_event_types": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "continueActiveSkill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "call_id"
+      ],
+      "properties": {
+        "action": {
+          "const": "continue_active_skill"
+        },
+        "call_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "callSkill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "skill_id",
+        "skill_version",
+        "arguments",
+        "deadline_at",
+        "precondition_fact_refs",
+        "on_failure"
+      ],
+      "properties": {
+        "action": {
+          "const": "call_skill"
+        },
+        "skill_id": {
+          "$ref": "#/$defs/id"
+        },
+        "skill_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "arguments": {
+          "type": "object",
+          "description": "Untrusted arguments; Runtime validates them against the selected SkillDescriptor input_schema_ref."
+        },
+        "deadline_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "precondition_fact_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "on_failure": {
+          "enum": [
+            "replan",
+            "ask_operator",
+            "safe_stop"
+          ]
+        }
+      }
+    },
+    "requestCancel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "call_id",
+        "reason_code"
+      ],
+      "properties": {
+        "action": {
+          "const": "request_cancel"
+        },
+        "call_id": {
+          "$ref": "#/$defs/id"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "replan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "reason_code"
+      ],
+      "properties": {
+        "action": {
+          "const": "replan"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "askOperator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "question_key",
+        "arguments",
+        "expires_at"
+      ],
+      "properties": {
+        "action": {
+          "const": "ask_operator"
+        },
+        "question_key": {
+          "$ref": "#/$defs/id"
+        },
+        "arguments": {
+          "type": "object"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "complete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "success_evidence_refs"
+      ],
+      "properties": {
+        "action": {
+          "const": "complete"
+        },
+        "success_evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "format": "uri-reference"
+          }
+        }
+      }
+    },
+    "safeStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "reason_code"
+      ],
+      "properties": {
+        "action": {
+          "const": "safe_stop"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "planPatchOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "operation",
+        "target_step_id",
+        "payload",
+        "reason_code"
+      ],
+      "properties": {
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "operation": {
+          "enum": [
+            "add_pending_step",
+            "replace_pending_step",
+            "remove_pending_step",
+            "reorder_pending_step"
+          ]
+        },
+        "target_step_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "payload": {
+          "type": "object",
+          "description": "Validated against the plan contract before acceptance."
+        },
+        "reason_code": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "memoryProposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "scope",
+        "key",
+        "value",
+        "confidence",
+        "evidence_refs"
+      ],
+      "properties": {
+        "proposal_id": {
+          "$ref": "#/$defs/id"
+        },
+        "scope": {
+          "enum": [
+            "task",
+            "episodic",
+            "semantic",
+            "user"
+          ]
+        },
+        "key": {
+          "$ref": "#/$defs/id"
+        },
+        "value": {
+          "description": "Untrusted proposal; Runtime or a reviewer decides whether to store it."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "format": "uri-reference"
+          }
+        }
+      }
+    }
+  }
+}
