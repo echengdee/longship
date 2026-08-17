@@ -15,6 +15,19 @@ next phase.
 
 ## Phase 1: Minimal Open Runtime
 
+Current experimental evidence:
+
+- a deterministic voice-tour FSM runs on a mock navigation target,
+- reserved stop and fixed operator controls bypass optional Brain providers,
+- travel speech and motion overlap under separate conceptual resources,
+- arrival evidence gates exhibit narration,
+- an optional Codex SDK provider is restricted to high-level proposals, and
+- an experimental Unitree G1 high-level target seam is hardware-off by default.
+
+These are V0 interfaces used to learn before the corresponding public contracts
+are stabilized. They do not yet satisfy the Phase 1 exit criteria or establish
+real-target qualification.
+
 Planned outputs:
 
 - versioned contract schemas and examples,

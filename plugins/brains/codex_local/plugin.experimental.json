@@ -1,0 +1,19 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.brain.codex-local",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "brain",
+  "entry_point": "longship.brain.codex_local:CodexLocalBrain",
+  "maturity": "experimental-non-actuating",
+  "approval_mode": "deny_all",
+  "optional_dependency": "openai-codex>=0.144.4,<0.145",
+  "actuator_scope": [],
+  "allowed_actions": [
+    "respond",
+    "clarify",
+    "start_tour",
+    "continue_tour",
+    "status"
+  ],
+  "hardware_commands": false
+}

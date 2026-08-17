@@ -1,0 +1,17 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.target.unitree-g1-high-level",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "target",
+  "entry_point": "longship.targets.unitree_sdk2:connect_unitree_g1",
+  "maturity": "experimental-not-hardware-qualified",
+  "hardware_enabled_by_default": false,
+  "actuator_scope": ["whole_body_motion"],
+  "exclusive_with": ["longship.locomotion.unitree-rl-lab"],
+  "upstream": {
+    "project": "unitree_sdk2_python",
+    "repository_url": "https://github.com/unitreerobotics/unitree_sdk2_python",
+    "revision": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5",
+    "license": "BSD-3-Clause"
+  }
+}

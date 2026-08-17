@@ -3,10 +3,10 @@
 **A contracts-first, plugin-driven open robotics project for capabilities that
 can grow without losing clarity, reliability, or safety.**
 
-> **Status:** Foundation stage. This repository currently defines the public
-> architecture, contribution boundaries, and release plan. Runnable components
-> will be added only when they are independently authored and ready for public
-> use.
+> **Status:** Foundation stage. The repository now includes an independently
+> authored, experimental voice-tour V0 on a mock target. It is a contract and
+> runtime-learning slice, not a claim of autonomous navigation or real-hardware
+> qualification.
 
 Longship is an independent open-source project for building practical,
 reusable capabilities for embodied machines. It is designed for small teams
@@ -83,6 +83,34 @@ concurrent model sessions with transactional handoff, cross-embodiment
 adapters, human-readable announcements, live observability, and evidence-gated
 evolution.
 
+## Run the Experimental Voice Tour
+
+The first executable vertical slice uses console input as an ASR boundary,
+console output as TTS, and deterministic mock navigation:
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -e .
+longship-tour scenarios/voice_tour/tour.zh-CN.json
+```
+
+Commands such as `stop` / `停止`, pause, resume, next, status, and cancel are
+routed locally without an LLM. Travel speech can overlap mock motion, while
+curated narration waits for arrival evidence. Unrecognised final text may use
+the optional, non-actuating Codex SDK provider (local app-server, not offline
+model inference):
+
+```bash
+pip install -e '.[codex]'
+longship-tour scenarios/voice_tour/tour.zh-CN.json --brain codex
+```
+
+See the [scenario instructions](scenarios/voice_tour/README.md) and the
+[runtime and extension guide](docs/guides/voice-tour-v0.md). The included
+Unitree G1 wrapper is disabled by default and is not connected to this mock
+scenario; it establishes a bounded target seam for supervised future work.
+
 ## Contracts First
 
 Longship will stabilize public protocols before expanding implementations.
@@ -137,6 +165,7 @@ longship/
 │   ├── targets/
 │   └── evaluators/
 ├── scenarios/
+│   ├── voice_tour/
 │   └── warehouse_box/
 ├── schemas/
 ├── benchmarks/
@@ -145,7 +174,9 @@ longship/
 └── tests/
 ```
 
-This tree is a roadmap, not a claim that every component already exists.
+Most of this tree remains a roadmap, not a claim that every component already
+exists. The voice-tour V0 intentionally implements only the seams documented in
+its guide.
 
 ## Plugin Model
 
@@ -192,9 +223,10 @@ skills, targets, experience, and evaluation. A pack may contain:
 - evaluation metrics and promotion gates, and
 - small success and failure episodes for replay.
 
-The first planned reference pack is **warehouse box handling**. It will begin
-with mock execution and deterministic evaluation before any hardware-specific
-integration.
+The first runnable pack is the experimental **voice tour V0** on a mock target.
+The broader planned reference pack is **warehouse box handling**, which will
+also begin with mock execution and deterministic evaluation before any
+hardware-specific integration.
 
 ## Artifact Policy
 

@@ -1,0 +1,19 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.locomotion.unitree-rl-lab",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "locomotion_policy",
+  "maturity": "reference-only-no-artifact",
+  "activation": "blocked",
+  "entry_point": null,
+  "actuator_scope": ["whole_body_motion"],
+  "exclusive_with": ["longship.target.unitree-g1-high-level"],
+  "upstream": {
+    "project": "unitree_rl_lab",
+    "repository_url": "https://github.com/unitreerobotics/unitree_rl_lab",
+    "revision": "4960b84732b0c2ec593dccbfe963fda1bcd7b1e3",
+    "repository_code_license": "Apache-2.0"
+  },
+  "artifact": null,
+  "block_reason": "No reviewed checkpoint, weight license, digest, or qualification evidence"
+}

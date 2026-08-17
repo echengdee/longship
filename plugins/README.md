@@ -48,6 +48,15 @@ Recommended role separation:
   and
 - `targets/unitree` — exact robot and SDK state/command translation.
 
+The first executable examples follow these boundaries:
+
+- [`brains/codex_local`](brains/codex_local/) is an experimental,
+  non-actuating high-level provider;
+- [`targets/unitree_g1`](targets/unitree_g1/) wraps a small, bounded portion of
+  the official high-level SDK behind a default-off hardware gate; and
+- [`locomotion/unitree_rl_lab`](locomotion/unitree_rl_lab/) reserves an external
+  policy seam without copying or activating model weights.
+
 A plugin references, but does not copy, its upstream repository. Production
 preflight resolves and verifies a reviewed artifact lock, checks license and
 resource requirements, warms the runtime, and confirms target qualification.
