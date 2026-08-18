@@ -58,25 +58,31 @@ planes.
 14. Models are selected per role, not globally. A shadow model owns no actuator lease, and only one active session may own a given actuator scope.
 15. Cancellation is hierarchical, bounded, monotonic, versioned, and unable to resurrect work through late results.
 16. A stop acknowledgement proves only receipt. "Stopped" requires measured target-specific motion or safe-state evidence.
+17. Codex is the reference high-level Brain, while Longship owns canonical memory, context assembly, voice transport, validation, and execution state.
 
 ## 3. System topology
 
 ```mermaid
 flowchart TB
-    Voice["Voice"] --> VoiceFront["Local VAD + ASR<br/>reserved command grammar first"]
+    Voice["Voice"] --> VoiceFront["Local Jackie + STOP KWS<br/>wake-gated VAD + ASR"]
     Keys["Keyboard / UI"] --> IG["Interaction Gateway"]
     VoiceFront --> IG
     WMS["Authorized API / WMS"] --> IG
     IG --> Route{"Deterministic route class"}
 
-    Route -->|task goal| Intent["OperatorIntent: semantic task"]
-    Intent --> Brain["Brain Provider: GPT or another LLM"]
+    Route -->|task goal / dialogue turn| Intent["OperatorIntent: semantic input"]
+    Intent --> Context["Context Builder<br/>bounded snapshot only"]
+    Knowledge["Reviewed Knowledge"] --> Context
+    Memory["Longship Memory<br/>history + summaries"] --> Context
+    SkillsView["Current Skill Catalog"] --> Context
+    State --> Context
+    Context --> Brain["Codex Brain<br/>persistent thread + selected model"]
     Brain --> Draft["TaskDraft: untrusted proposal"]
-    Draft --> Compiler["Context Compiler + Contract Validator"]
+    Draft --> DecisionGate["Schema + revision + policy validation"]
+    DecisionGate -->|task proposal| Compiler["Mission Compiler"]
     Compiler --> Mission["MissionContract"]
     Mission --> Runtime["Contextual Runtime"]
 
-    Route -->|dialogue turn| Dialogue["Dialogue Provider"]
     Route -->|pause / resume / cancel / status| Control["RuntimeControlCommand"]
     Control --> ControlCheck["Authorization + freshness + version checks"]
     ControlCheck --> Runtime
@@ -101,7 +107,7 @@ flowchart TB
     Safety --> Events
     Events --> Notify["Notification Manager"]
     Notify --> Audio["Audio Arbiter + Local TTS"]
-    Dialogue --> Audio
+    DecisionGate -->|validated speech-only response| Audio
     Interaction --> Audio
     Audio --> Outputs["Speaker / Captions / UI / Lights"]
 
@@ -135,6 +141,10 @@ flowchart TB
 not a mutable global object. Consumers receive timestamped, versioned snapshots
 with confidence, frame, provenance, and freshness information.
 
+The concrete separation between a semantic Skill, its provider, Runtime,
+Safety, and a target adapter is specified in
+[Skills, Runtime, Navigation, and Target Boundaries](skills-and-runtime.md).
+
 ## 5. Two connected loops
 
 ### 5.1 Online task loop
@@ -151,8 +161,9 @@ knowledge and current context
 ```
 
 Layers 1 and 2 run when a task is created, relevant conditions change, or the
-runtime reaches a replanning boundary. The LLM is event-driven. It does not
-receive every high-rate sensor sample and does not participate in motor timing.
+runtime reaches a replanning boundary. The Codex Brain is event-driven. It does
+not receive every high-rate sensor sample and does not participate in motor
+timing.
 
 ### 5.2 Offline evolution loop
 
@@ -208,10 +219,13 @@ online execution and offline evolution.
 ## 7. Interchangeable brains, skills, and embodiments
 
 Longship stores task state, memory, and plans in its own contracts instead of
-depending on a provider's conversation state.
+depending on a provider's conversation state. The public reference Brain is
+Codex, controlled through its local SDK/app-server interface. The provider
+contract remains explicit so the selected underlying model can change without
+changing Runtime or granting new authority.
 
-- A **Brain Provider** (for example GPT, Qwen, Claude, or a local model) accepts
-  a normalized context and returns a strict `TaskDraft` or recovery proposal.
+- The **Codex Brain Provider** accepts a bounded normalized context and returns
+  a strict `TaskDraft`, dialogue response, or recovery proposal.
 - A **Policy Adapter** can expose an embodied model such as GR00T or another
   VLA policy as a bounded skill backend.
 - A **Locomotion or tracking adapter** can expose a framework such as Holosoma
@@ -226,6 +240,16 @@ A switch occurs only at a decision boundary. The new provider receives the
 canonical `TaskState`; it cannot inherit hidden authority from the previous
 provider. Provider name, model identifier, adapter version, latency, and
 decision ID are recorded by the gateway rather than trusted from model output.
+
+Codex is an agent layer over an explicitly selected model. Its context window
+is therefore model- and account-dependent; it is not a fixed property of the
+Longship contract and it is not durable robot memory. Even when a selected
+model supports roughly one million tokens, Runtime sends a small authoritative
+snapshot plus retrieved summaries instead of replaying raw history, logs, or
+telemetry. ChatGPT Voice in the desktop app is also distinct from the Codex
+SDK. A robot deployment keeps VAD/ASR, reserved command recognition, Audio
+Arbitration, and TTS in separate providers so speech latency or failure cannot
+block deterministic control.
 
 ### 7.1 Role-scoped concurrent model sessions
 
@@ -575,7 +599,7 @@ It never announces model predictions as completed physical actions.
 | `safety.safe_state_verified` | "I have stopped. Please keep the area clear." | Required when the resolved profile gates completion on `t4` |
 
 Safety and task-transition messages use deterministic, localized templates.
-An LLM may optionally paraphrase noncritical explanations, but it cannot remove
+Codex may optionally paraphrase noncritical explanations, but it cannot remove
 required facts, lower severity, or delay delivery. Voice, captions, UI, lights,
 and remote notifications share one event source.
 

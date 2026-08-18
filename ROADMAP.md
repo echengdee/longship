@@ -15,11 +15,27 @@ next phase.
 
 ## Phase 1: Minimal Open Runtime
 
+Current experimental evidence:
+
+- a deterministic voice-tour FSM runs on a mock navigation target,
+- reserved stop and fixed operator controls bypass optional Brain providers,
+- travel speech and motion overlap under separate conceptual resources,
+- arrival evidence gates exhibit narration,
+- the reference Codex Brain is opt-in and restricted to high-level proposals,
+- a typed Jackie wake/dictation core is covered by deterministic mock tests,
+  while real microphone and model activation remain out of scope, and
+- an experimental Unitree G1 high-level target seam is hardware-off by default.
+
+These are V0 interfaces used to learn before the corresponding public contracts
+are stabilized. They do not yet satisfy the Phase 1 exit criteria or establish
+real-target qualification.
+
 Planned outputs:
 
 - versioned contract schemas and examples,
 - plugin SDK and compatibility checks,
 - mock target,
+- local streaming VAD/ASR and TTS plugin boundaries,
 - deterministic end-to-end benchmark,
 - reference safe-stop skill,
 - structured experience episodes, and
@@ -38,6 +54,7 @@ Planned outputs:
 
 - knowledge ingestion with source provenance,
 - deterministic context compilation,
+- Longship-owned durable memory, summaries, and relevance retrieval,
 - experience recording and failure classification,
 - simulation adapters, and
 - additional public scenario packs.

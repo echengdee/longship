@@ -3,10 +3,11 @@
 **A contracts-first, plugin-driven open robotics project for capabilities that
 can grow without losing clarity, reliability, or safety.**
 
-> **Status:** Foundation stage. This repository currently defines the public
-> architecture, contribution boundaries, and release plan. Runnable components
-> will be added only when they are independently authored and ready for public
-> use.
+> **Status:** Foundation stage. The repository now includes an independently
+> authored, experimental voice-tour V0 on a mock target and a testable Jackie
+> wake/dictation boundary. These are contract and runtime-learning slices, not
+> claims of autonomous navigation, production speech, or real-hardware
+> qualification.
 
 Longship is an independent open-source project for building practical,
 reusable capabilities for embodied machines. It is designed for small teams
@@ -40,6 +41,13 @@ separately:
 5. **Experience** — structured evidence from execution, failure, and recovery.
 6. **Evaluation** — reproducible tests and gates for capability promotion.
 
+When high-level AI is enabled, Longship's public reference path uses **Codex
+as the Brain**. Longship's context builder supplies Codex with a bounded
+snapshot of knowledge, Longship-owned memory, world state, and currently
+available Skills. The runtime treats Codex's result as an untrusted high-level
+proposal. The V0 implementation currently sends only authoritative tour state
+and its action allowlist. Fixed controls and every stop path bypass Codex.
+
 Collecting more data is not enough. Physical intelligence needs a disciplined
 path from context to action, from action to evidence, and from evidence to a
 safer next capability.
@@ -48,12 +56,32 @@ safer next capability.
 
 ```mermaid
 flowchart LR
+    Safe["Independent safety"]
+
     subgraph Scene["Scene loop"]
-        K["Knowledge"] --> M["Mission"]
+        Voice["Voice"] --> StopKWS["Always-on local STOP KWS"]
+        StopKWS --> Safe
+        Voice --> Audio["Local Jackie wake + VAD + ASR"]
+        Audio --> Router["Local command router"]
+        Keys["Keyboard / UI"] --> Router
+        Router -->|"task / dialogue"| Context["Bounded context"]
+        Router -->|"fixed controls"| R["Runtime"]
+        Router -->|"reserved STOP"| Safe
+        K["Knowledge"] --> Context
+        W["World state"] --> Context
+        W --> R
+        Memory["Longship memory"] --> Context
+        Skills["Available Skills"] --> Context
+        Context --> Codex["Codex Brain"]
+        Codex --> Draft["TaskDraft: untrusted"]
+        Draft --> Gate["Contract + revision gate"]
+        Gate --> M["Mission"]
         M --> R["Runtime"]
-        R --> S["Skill"]
+        R --> S["Selected Skills"]
         S --> T["Robot or simulator"]
+        R --> Output["TTS / UI"]
         T --> E["Experience"]
+        E --> Memory
     end
 
     subgraph Ecosystem["Ecosystem loop"]
@@ -63,18 +91,21 @@ flowchart LR
         G --> Registry["Registry"]
     end
 
-    C --> M
+    C --> Gate
     P --> S
     E --> B
     Registry --> R
-    W["World state"] --> R
-    Safe["Independent safety"] -. veto .-> R
+    Safe -. veto .-> R
     Safe -. stop .-> T
 ```
 
-The **scene loop** is intended to turn a real task into structured experience. The
-**ecosystem loop** lets people contribute compatible contracts, plugins, and
-benchmarks without coupling the project to one model, simulator, or robot.
+The **scene loop** shows the target architecture rather than claiming every
+node is implemented in V0. It is intended to turn a real task into structured
+experience.
+Codex is the reference high-level Brain, not the owner of robot state, memory,
+audio transport, or actuator authority. The **ecosystem loop** lets people
+contribute compatible contracts, plugins, and benchmarks without coupling the
+project to one underlying model, simulator, or robot.
 
 The detailed [System Architecture v2](docs/architecture/system-architecture-v2.md)
 proposal adds deterministic keyboard and reserved-voice controls that bypass
@@ -82,6 +113,67 @@ LLMs, parallel resource-safe Skills such as speaking while moving, role-scoped
 concurrent model sessions with transactional handoff, cross-embodiment
 adapters, human-readable announcements, live observability, and evidence-gated
 evolution.
+
+The companion [Skills and Runtime boundary](docs/architecture/skills-and-runtime.md)
+defines where semantic Skills, navigation providers, target adapters, Runtime,
+and Safety belong. In short, Runtime schedules capabilities; it does not absorb
+their algorithms.
+
+## Run the Experimental Voice Tour
+
+The first executable vertical slice uses console input as an ASR boundary,
+console output as TTS, and deterministic mock navigation:
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -e .
+longship-tour scenarios/voice_tour/tour.zh-CN.json
+```
+
+The core also includes a provider-neutral Jackie voice session controller and
+deterministic mock input. It accepts ordinary final transcripts only after a
+matching `Jackie` wake event, while every partial transcript and unawakened
+final transcript is restricted to the local safety-only route. This lets a
+reserved `stop` / `停止` overtake a slow Brain call without treating the wake
+phrase as authorization. See the [Jackie voice-input guide](docs/guides/jackie-voice-input-v0.md).
+
+No real microphone, wake model, ASR model, or TTS engine is activated by this
+repository. The reserved
+[`jackie_sherpa_onnx`](plugins/speech/voice_inputs/jackie_sherpa_onnx/)
+integration records the intended local plugin and external-artifact boundary.
+
+Commands such as `stop` / `停止`, pause, resume, next, status, and cancel are
+routed locally without Codex. Travel speech can overlap mock motion, while
+curated narration waits for arrival evidence. Unrecognised final text may use
+the optional, non-actuating Codex SDK provider (local app-server, not offline
+model inference):
+
+```bash
+pip install -e '.[codex]'
+longship-tour scenarios/voice_tour/tour.zh-CN.json --brain codex
+```
+
+The selected Codex model can be set explicitly at launch:
+
+```bash
+longship-tour scenarios/voice_tour/tour.zh-CN.json \
+  --brain codex \
+  --codex-model gpt-5.6-terra
+```
+
+Model access and context size depend on the current account and selected model.
+The official [Codex SDK](https://learn.chatgpt.com/docs/codex-sdk) can run a
+persistent thread with an explicit model, but its Python interface is not the
+robot's microphone or speaker transport. [ChatGPT Voice](https://learn.chatgpt.com/docs/features/voice)
+in the desktop app is a separate GPT-Live-powered product layer. Longship
+therefore keeps local VAD/ASR, reserved commands, TTS, and durable memory
+outside Codex.
+
+See the [scenario instructions](scenarios/voice_tour/README.md) and the
+[runtime and extension guide](docs/guides/voice-tour-v0.md). The included
+Unitree G1 wrapper is disabled by default and is not connected to this mock
+scenario; it establishes a bounded target seam for supervised future work.
 
 ## Contracts First
 
@@ -121,6 +213,8 @@ Planned layout:
 longship/
 ├── src/longship/
 │   ├── contracts/
+│   ├── audio/
+│   ├── navigation/
 │   ├── knowledge/
 │   ├── context/
 │   ├── runtime/
@@ -133,10 +227,13 @@ longship/
 ├── plugins/
 │   ├── brains/
 │   ├── skills/
+│   ├── navigation/
+│   ├── speech/
 │   ├── policies/
 │   ├── targets/
 │   └── evaluators/
 ├── scenarios/
+│   ├── voice_tour/
 │   └── warehouse_box/
 ├── schemas/
 ├── benchmarks/
@@ -145,7 +242,9 @@ longship/
 └── tests/
 ```
 
-This tree is a roadmap, not a claim that every component already exists.
+Most of this tree remains a roadmap, not a claim that every component already
+exists. The voice-tour V0 intentionally implements only the seams documented in
+its guide.
 
 ## Plugin Model
 
@@ -192,9 +291,10 @@ skills, targets, experience, and evaluation. A pack may contain:
 - evaluation metrics and promotion gates, and
 - small success and failure episodes for replay.
 
-The first planned reference pack is **warehouse box handling**. It will begin
-with mock execution and deterministic evaluation before any hardware-specific
-integration.
+The first runnable pack is the experimental **voice tour V0** on a mock target.
+The broader planned reference pack is **warehouse box handling**, which will
+also begin with mock execution and deterministic evaluation before any
+hardware-specific integration.
 
 ## Artifact Policy
 

@@ -1,0 +1,32 @@
+{
+  "schema_version": "longship.voice-tour.v0",
+  "tour_id": "longship-public-demo",
+  "title": "Longship 公开语音导览",
+  "locale": "zh-CN",
+  "map_id": "mock-public-space",
+  "map_version": "v1",
+  "route_id": "mock-main-route",
+  "stops": [
+    {
+      "stop_id": "welcome",
+      "waypoint_id": "wp-welcome",
+      "title": "欢迎点",
+      "travel_announcement": "我们先前往欢迎点。移动过程中，你可以随时说暂停或者停止。",
+      "narration": "欢迎认识 Longship。它强调探索、学习、协作和持续进化，并把安全和可复用能力放在一次性演示之前。"
+    },
+    {
+      "stop_id": "architecture",
+      "waypoint_id": "wp-architecture",
+      "title": "系统架构",
+      "travel_announcement": "下一站介绍系统架构。",
+      "narration": "Longship 把语言模型、任务技能、导航、行走策略和机器人适配器分层。语言模型只做高层建议，运行时和安全层保留最终控制权。"
+    },
+    {
+      "stop_id": "future",
+      "waypoint_id": "wp-future",
+      "title": "未来能力",
+      "travel_announcement": "最后一站介绍未来能力。",
+      "narration": "未来可以在同一接口下加入定位、路径规划、跟随、搬运和操作技能，并用可复现的评估逐步提升目标资格。"
+    }
+  ]
+}
