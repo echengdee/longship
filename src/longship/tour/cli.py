@@ -18,8 +18,20 @@ from .runtime import VoiceTourRuntime
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the experimental Longship voice-tour V0")
     parser.add_argument("plan", type=Path, help="path to a longship.voice-tour.v0 JSON plan")
-    parser.add_argument("--brain", choices=("off", "codex"), default="off")
-    parser.add_argument("--codex-model", default=None)
+    parser.add_argument(
+        "--brain",
+        choices=("off", "codex"),
+        default="off",
+        help="high-level Brain; fixed controls and STOP always bypass it",
+    )
+    parser.add_argument(
+        "--codex-model",
+        default=None,
+        help=(
+            "model ID passed to Codex; requires --brain codex; access and context "
+            "size are model-dependent"
+        ),
+    )
     parser.add_argument("--mock-travel-seconds", type=float, default=0.5)
     parser.add_argument("--speaker-label", default="Longship")
     parser.add_argument("--auto-start", action="store_true")
@@ -90,7 +102,10 @@ async def _run(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    args = _parser().parse_args()
+    parser = _parser()
+    args = parser.parse_args()
+    if args.codex_model is not None and args.brain != "codex":
+        parser.error("--codex-model requires --brain codex")
     raise SystemExit(asyncio.run(_run(args)))
 
 

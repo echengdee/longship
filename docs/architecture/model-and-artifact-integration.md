@@ -33,7 +33,7 @@ the source of bytes. A runtime cache is the source used for execution.
 
 | Example | Longship role | What it contributes | What it must not become |
 | --- | --- | --- | --- |
-| GPT, Qwen, Claude, or another LLM | `brain` or `dialogue` provider | Goal interpretation, task draft, explanation, recovery proposal, or conversation | A joint, torque, velocity, or safety controller |
+| Codex agent with an explicitly recorded model | `brain` or `dialogue` provider | Goal interpretation, task draft, explanation, recovery proposal, or conversation | An ASR/TTS transport, durable memory store, joint/velocity controller, or safety authority |
 | Whisper, SenseVoice, or another qualified recognizer | `asr` provider | Speech segments or reserved-command candidates | A safety-rated emergency-stop device |
 | CosyVoice or another synthesizer | `tts` provider | Asynchronous speech output behind the Audio Arbiter | A dependency of stopping or control progress |
 | A detector, tracker, or VLM | `perception` provider | Versioned observations and scene interpretation | An unvalidated world-state authority |
@@ -51,6 +51,13 @@ hashes, and qualification results.
 Names above identify optional integration families, not endorsements, bundled
 dependencies, or claims of compatibility. Every exact revision is reviewed
 again when a plugin is implemented.
+
+Codex is Longship's public reference Brain, but "Codex" and the selected model
+are separate identities. A deployment records the Codex adapter/runtime
+version, model ID, account/deployment scope, context policy, and decision ID.
+Maximum context is model-dependent and does not replace Longship-owned memory
+or retrieval. Desktop ChatGPT Voice is not treated as the robot's Codex SDK
+audio interface; robot ASR and TTS remain independent plugins.
 
 ## 3. Proposed repository shape
 
@@ -260,12 +267,13 @@ scope conflicts. Compare-and-swap and rollback are role-scoped.
 
 ## 7. Deployment profiles
 
-### 7.1 Remote brain
+### 7.1 Codex reference brain
 
-A cloud LLM is represented by a small provider adapter. No model weights are
-stored by Longship. Credentials stay outside manifests. This profile is
-appropriate for event-driven task understanding and planning, never for
-high-rate control.
+Codex is represented by a small provider adapter controlling the local
+app-server while inference may still use the configured service. No model
+weights are stored by Longship. Credentials stay outside manifests. This
+profile is appropriate for event-driven task understanding, dialogue, and
+planning, never for high-rate control.
 
 ### 7.2 Edge policy
 

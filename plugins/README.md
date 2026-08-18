@@ -8,6 +8,11 @@ knowledge sources, perception providers, Skills, policy adapters, target
 adapters, and evaluators. Runtime selects providers per role, so several
 qualified plugins may be active concurrently.
 
+Codex is the first public reference Brain provider and remains opt-in in the
+mock scenario. It consumes text plus Longship-owned context and emits only
+untrusted high-level proposals. Microphone capture, VAD/ASR, reserved command
+recognition, TTS, Runtime state, and Safety remain separate roles.
+
 Every plugin will provide a machine-readable manifest similar to:
 
 ```yaml
@@ -50,8 +55,8 @@ Recommended role separation:
 
 The first executable examples follow these boundaries:
 
-- [`brains/codex_local`](brains/codex_local/) is an experimental,
-  non-actuating high-level provider;
+- [`brains/codex_local`](brains/codex_local/) is the experimental, opt-in,
+  non-actuating reference high-level Brain provider;
 - [`targets/unitree_g1`](targets/unitree_g1/) wraps a small, bounded portion of
   the official high-level SDK behind a default-off hardware gate; and
 - [`locomotion/unitree_rl_lab`](locomotion/unitree_rl_lab/) reserves an external

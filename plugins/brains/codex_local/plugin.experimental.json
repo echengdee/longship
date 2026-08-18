@@ -5,8 +5,13 @@
   "kind": "brain",
   "entry_point": "longship.brain.codex_local:CodexLocalBrain",
   "maturity": "experimental-non-actuating",
+  "reference_role": "high_level_brain",
   "approval_mode": "deny_all",
   "optional_dependency": "openai-codex>=0.144.4,<0.145",
+  "input_modalities": ["text"],
+  "audio_transport": false,
+  "context_window_source": "selected_model",
+  "canonical_memory_owner": "longship",
   "actuator_scope": [],
   "allowed_actions": [
     "respond",

@@ -12,10 +12,13 @@ repository and uses only the Python standard library by default.
 
 ```mermaid
 flowchart LR
-    Input["Keyboard or ASR text"] --> Gateway["Interaction router"]
+    Mic["Microphone"] --> ASR["Local VAD + ASR"]
+    ASR --> Gateway["Interaction router"]
+    Keys["Keyboard"] --> Gateway
     Gateway -->|"stop / 停止, including partial ASR"| Stop["Local protective stop"]
     Gateway -->|"start, pause, resume, next, status"| FSM["Deterministic tour FSM"]
-    Gateway -->|"unrecognised final text"| Brain["Optional Codex provider"]
+    Gateway -->|"unrecognised final text"| Context["Bounded V0 context<br/>tour state + allowed actions"]
+    Context --> Brain["Optional Codex Brain"]
     Brain -->|"validated high-level proposal"| CAS["Revision / allowlist check"]
     CAS --> FSM
     FSM --> Nav["NavigationPort: waypoint ID only"]
@@ -44,11 +47,18 @@ V0-local. They do not implement the broader draft `BrainDecision` or
 ## State and memory
 
 Longship owns the canonical tour ID, current stop, state, and monotonic runtime
-revision. The optional Codex thread supplies conversational continuity only.
+revision. The opt-in Codex thread supplies conversational continuity only.
 Every request contains the current snapshot, and its response is ignored when
 the revision changes while the model is thinking. This prevents a late
 `start_tour` or `continue_tour` proposal from applying after pause, cancellation,
 or stop.
+
+The context window belongs to the model selected inside Codex. It is not a
+memory guarantee, so future deployments should retrieve only relevant episode
+summaries and current Skill descriptors into each bounded request. ChatGPT
+Voice in the desktop application is a separate user interface; this runtime
+still expects an independently qualified ASR transcript and emits text through
+`SpeakerPort` for an independently qualified TTS provider.
 
 ## Navigation extension seam
 

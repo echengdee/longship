@@ -40,6 +40,13 @@ separately:
 5. **Experience** — structured evidence from execution, failure, and recovery.
 6. **Evaluation** — reproducible tests and gates for capability promotion.
 
+When high-level AI is enabled, Longship's public reference path uses **Codex
+as the Brain**. Longship's context builder supplies Codex with a bounded
+snapshot of knowledge, Longship-owned memory, world state, and currently
+available Skills. The runtime treats Codex's result as an untrusted high-level
+proposal. The V0 implementation currently sends only authoritative tour state
+and its action allowlist. Fixed controls and every stop path bypass Codex.
+
 Collecting more data is not enough. Physical intelligence needs a disciplined
 path from context to action, from action to evidence, and from evidence to a
 safer next capability.
@@ -48,12 +55,28 @@ safer next capability.
 
 ```mermaid
 flowchart LR
+    Safe["Independent safety"]
+
     subgraph Scene["Scene loop"]
-        K["Knowledge"] --> M["Mission"]
+        Input["Voice / keyboard"] --> Router["Local command router"]
+        Router -->|"task / dialogue"| Context["Bounded context"]
+        Router -->|"fixed controls"| R["Runtime"]
+        Router -->|"reserved STOP"| Safe
+        K["Knowledge"] --> Context
+        W["World state"] --> Context
+        W --> R
+        Memory["Longship memory"] --> Context
+        Skills["Available Skills"] --> Context
+        Context --> Codex["Codex Brain"]
+        Codex --> Draft["TaskDraft: untrusted"]
+        Draft --> Gate["Contract + revision gate"]
+        Gate --> M["Mission"]
         M --> R["Runtime"]
-        R --> S["Skill"]
+        R --> S["Selected Skills"]
         S --> T["Robot or simulator"]
+        R --> Output["TTS / UI"]
         T --> E["Experience"]
+        E --> Memory
     end
 
     subgraph Ecosystem["Ecosystem loop"]
@@ -63,18 +86,21 @@ flowchart LR
         G --> Registry["Registry"]
     end
 
-    C --> M
+    C --> Gate
     P --> S
     E --> B
     Registry --> R
-    W["World state"] --> R
-    Safe["Independent safety"] -. veto .-> R
+    Safe -. veto .-> R
     Safe -. stop .-> T
 ```
 
-The **scene loop** is intended to turn a real task into structured experience. The
-**ecosystem loop** lets people contribute compatible contracts, plugins, and
-benchmarks without coupling the project to one model, simulator, or robot.
+The **scene loop** shows the target architecture rather than claiming every
+node is implemented in V0. It is intended to turn a real task into structured
+experience.
+Codex is the reference high-level Brain, not the owner of robot state, memory,
+audio transport, or actuator authority. The **ecosystem loop** lets people
+contribute compatible contracts, plugins, and benchmarks without coupling the
+project to one underlying model, simulator, or robot.
 
 The detailed [System Architecture v2](docs/architecture/system-architecture-v2.md)
 proposal adds deterministic keyboard and reserved-voice controls that bypass
@@ -96,7 +122,7 @@ longship-tour scenarios/voice_tour/tour.zh-CN.json
 ```
 
 Commands such as `stop` / `停止`, pause, resume, next, status, and cancel are
-routed locally without an LLM. Travel speech can overlap mock motion, while
+routed locally without Codex. Travel speech can overlap mock motion, while
 curated narration waits for arrival evidence. Unrecognised final text may use
 the optional, non-actuating Codex SDK provider (local app-server, not offline
 model inference):
@@ -105,6 +131,22 @@ model inference):
 pip install -e '.[codex]'
 longship-tour scenarios/voice_tour/tour.zh-CN.json --brain codex
 ```
+
+The selected Codex model can be set explicitly at launch:
+
+```bash
+longship-tour scenarios/voice_tour/tour.zh-CN.json \
+  --brain codex \
+  --codex-model gpt-5.6-terra
+```
+
+Model access and context size depend on the current account and selected model.
+The official [Codex SDK](https://learn.chatgpt.com/docs/codex-sdk) can run a
+persistent thread with an explicit model, but its Python interface is not the
+robot's microphone or speaker transport. [ChatGPT Voice](https://learn.chatgpt.com/docs/features/voice)
+in the desktop app is a separate GPT-Live-powered product layer. Longship
+therefore keeps local VAD/ASR, reserved commands, TTS, and durable memory
+outside Codex.
 
 See the [scenario instructions](scenarios/voice_tour/README.md) and the
 [runtime and extension guide](docs/guides/voice-tour-v0.md). The included
