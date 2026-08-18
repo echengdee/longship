@@ -15,6 +15,19 @@ next phase.
 
 ## Phase 1: Minimal Open Runtime
 
+Current experimental evidence:
+
+- a provider-neutral Jackie wake/dictation core is covered by deterministic
+  mock tests;
+- ordinary final transcripts are wake-gated, while partial and unawakened
+  transcripts are restricted to a safety-only Runtime route; and
+- real microphone capture, KWS/VAD/ASR models, TTS, and robot hardware remain
+  out of scope.
+
+These V0 interfaces are used to learn before the corresponding public contracts
+are stabilized. They do not establish production speech or real-target
+qualification.
+
 Planned outputs:
 
 - versioned contract schemas and examples,
