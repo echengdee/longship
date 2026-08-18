@@ -12,10 +12,14 @@ repository and uses only the Python standard library by default.
 
 ```mermaid
 flowchart LR
-    Mic["Microphone"] --> ASR["Local VAD + ASR"]
-    ASR --> Gateway["Interaction router"]
+    Mic["Microphone"] --> StopKWS["Always-on local STOP KWS"]
+    StopKWS --> Stop["Local protective stop"]
+    Mic --> Wake["Local Jackie KWS"]
+    Wake --> ASR["VAD + streaming ASR"]
+    ASR --> Session["Wake/dictation session"]
+    Session --> Gateway["Interaction router"]
     Keys["Keyboard"] --> Gateway
-    Gateway -->|"stop / 停止, including partial ASR"| Stop["Local protective stop"]
+    Gateway -->|"stop / 停止, including partial ASR"| Stop
     Gateway -->|"start, pause, resume, next, status"| FSM["Deterministic tour FSM"]
     Gateway -->|"unrecognised final text"| Context["Bounded V0 context<br/>tour state + allowed actions"]
     Context --> Brain["Optional Codex Brain"]
@@ -43,6 +47,41 @@ the demo process under operator supervision is the current reset boundary.
 The Python names `TourBrainProposal` and `TourRuntimeEvent` are deliberately
 V0-local. They do not implement the broader draft `BrainDecision` or
 `RuntimeEvent` proposal schemas yet.
+
+## Jackie voice-input boundary
+
+`longship.audio` now provides typed `WAKE`, `PARTIAL`, `FINAL`, `TIMEOUT`, and
+`ERROR` events, an asynchronous `VoiceInputPort`, a deterministic
+`MockVoiceInput`, and `WakeDictationController`. The controller is independent
+of the tour implementation: it injects text through the small `handle_text`
+boundary and does not own a Brain.
+
+The V0 routing rules are deliberately narrow:
+
+| Input | Runtime path |
+| --- | --- |
+| Matching `WAKE`, then same-session `FINAL` | Normal deterministic/Brain route |
+| Any `PARTIAL` | `partial=True`: reserved STOP grammar only |
+| `FINAL` while armed or from an old session | `partial=True`: reserved STOP grammar only |
+| Matching `TIMEOUT` or `ERROR` | Return to armed state; no Brain call |
+
+Only one configured wake phrase at the beginning of an accepted final
+transcript is removed. Replayed or out-of-order wake events cannot replace a
+newer session. Runtime calls are owned tasks: Runtime remains responsible for
+classifying and scheduling complete utterances, so a fixed control or the
+safety path can overtake a slow Codex response. Controller close uses one
+deadline and cancels its owned cooperative work. Separate normal and safety
+lanes use bounded newest-wins admission so a faulty event burst cannot create
+an unbounded set of Runtime calls.
+
+This is a session and routing core, not a production audio stack. It currently
+has no microphone capture, KWS/VAD/ASR inference, echo cancellation, identity
+authentication, or real TTS integration. A live plugin also requires a
+parallel, always-on local reserved-STOP detector; ordinary ASR remains
+wake-gated. Wake opens dictation only; source
+authorization and motion policy remain separate. A deployment must also prove
+that Jackie's own speech cannot wake the microphone path. See the dedicated
+[voice-input guide](jackie-voice-input-v0.md) for the integration contract.
 
 ## State and memory
 
@@ -111,7 +150,8 @@ configuration acts on all 29 joints, so its conservative scope is
 
 ## Next increments
 
-1. Add streaming ASR and TTS plugins behind the current text/speaker ports.
+1. Connect a reviewed local KWS/VAD/ASR plugin to `VoiceInputPort`, add echo
+   control, and add TTS behind `SpeakerPort`.
 2. Stabilize waypoint, arrival-evidence, resource-lease, and cancellation
    contracts from the V0 test evidence.
 3. Add a mock map/localizer and a target-independent navigation conformance

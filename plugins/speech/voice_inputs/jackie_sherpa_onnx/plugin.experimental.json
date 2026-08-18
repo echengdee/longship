@@ -1,0 +1,52 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.voice-input.jackie-sherpa-onnx",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "voice_input",
+  "maturity": "reference-only-no-artifact",
+  "activation": "blocked",
+  "entry_point": null,
+  "processing_location": "on_device",
+  "input_audio": {
+    "encoding": "pcm_s16le",
+    "sample_rate_hz": 16000,
+    "channels": 1
+  },
+  "wake_phrases": [
+    "hey jackie",
+    "jackie",
+    "你好杰基"
+  ],
+  "reserved_stop_phrases": [
+    "stop",
+    "emergency stop",
+    "halt",
+    "freeze",
+    "急停",
+    "停止",
+    "停下",
+    "别动",
+    "不要动"
+  ],
+  "always_on_branches": [
+    "wake_keyword_spotting",
+    "reserved_stop_keyword_spotting"
+  ],
+  "output_events": [
+    "wake",
+    "partial",
+    "final",
+    "timeout",
+    "error"
+  ],
+  "raw_audio_persistence": false,
+  "network_required_for_audio": false,
+  "actuator_scope": [],
+  "upstream": {
+    "project": "sherpa-onnx",
+    "repository_url": "https://github.com/k2-fsa/sherpa-onnx",
+    "repository_code_license": "Apache-2.0"
+  },
+  "artifacts": [],
+  "block_reason": "No reviewed model locks, microphone/AEC profile, or target voice evaluation"
+}

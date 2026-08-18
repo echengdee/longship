@@ -4,8 +4,9 @@
 can grow without losing clarity, reliability, or safety.**
 
 > **Status:** Foundation stage. The repository now includes an independently
-> authored, experimental voice-tour V0 on a mock target. It is a contract and
-> runtime-learning slice, not a claim of autonomous navigation or real-hardware
+> authored, experimental voice-tour V0 on a mock target and a testable Jackie
+> wake/dictation boundary. These are contract and runtime-learning slices, not
+> claims of autonomous navigation, production speech, or real-hardware
 > qualification.
 
 Longship is an independent open-source project for building practical,
@@ -58,7 +59,11 @@ flowchart LR
     Safe["Independent safety"]
 
     subgraph Scene["Scene loop"]
-        Input["Voice / keyboard"] --> Router["Local command router"]
+        Voice["Voice"] --> StopKWS["Always-on local STOP KWS"]
+        StopKWS --> Safe
+        Voice --> Audio["Local Jackie wake + VAD + ASR"]
+        Audio --> Router["Local command router"]
+        Keys["Keyboard / UI"] --> Router
         Router -->|"task / dialogue"| Context["Bounded context"]
         Router -->|"fixed controls"| R["Runtime"]
         Router -->|"reserved STOP"| Safe
@@ -109,6 +114,11 @@ concurrent model sessions with transactional handoff, cross-embodiment
 adapters, human-readable announcements, live observability, and evidence-gated
 evolution.
 
+The companion [Skills and Runtime boundary](docs/architecture/skills-and-runtime.md)
+defines where semantic Skills, navigation providers, target adapters, Runtime,
+and Safety belong. In short, Runtime schedules capabilities; it does not absorb
+their algorithms.
+
 ## Run the Experimental Voice Tour
 
 The first executable vertical slice uses console input as an ASR boundary,
@@ -120,6 +130,18 @@ python -m venv .venv
 pip install -e .
 longship-tour scenarios/voice_tour/tour.zh-CN.json
 ```
+
+The core also includes a provider-neutral Jackie voice session controller and
+deterministic mock input. It accepts ordinary final transcripts only after a
+matching `Jackie` wake event, while every partial transcript and unawakened
+final transcript is restricted to the local safety-only route. This lets a
+reserved `stop` / `停止` overtake a slow Brain call without treating the wake
+phrase as authorization. See the [Jackie voice-input guide](docs/guides/jackie-voice-input-v0.md).
+
+No real microphone, wake model, ASR model, or TTS engine is activated by this
+repository. The reserved
+[`jackie_sherpa_onnx`](plugins/speech/voice_inputs/jackie_sherpa_onnx/)
+integration records the intended local plugin and external-artifact boundary.
 
 Commands such as `stop` / `停止`, pause, resume, next, status, and cancel are
 routed locally without Codex. Travel speech can overlap mock motion, while
@@ -191,6 +213,8 @@ Planned layout:
 longship/
 ├── src/longship/
 │   ├── contracts/
+│   ├── audio/
+│   ├── navigation/
 │   ├── knowledge/
 │   ├── context/
 │   ├── runtime/
@@ -203,6 +227,8 @@ longship/
 ├── plugins/
 │   ├── brains/
 │   ├── skills/
+│   ├── navigation/
+│   ├── speech/
 │   ├── policies/
 │   ├── targets/
 │   └── evaluators/

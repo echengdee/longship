@@ -22,6 +22,8 @@ Current experimental evidence:
 - travel speech and motion overlap under separate conceptual resources,
 - arrival evidence gates exhibit narration,
 - the reference Codex Brain is opt-in and restricted to high-level proposals,
+- a typed Jackie wake/dictation core is covered by deterministic mock tests,
+  while real microphone and model activation remain out of scope, and
 - an experimental Unitree G1 high-level target seam is hardware-off by default.
 
 These are V0 interfaces used to learn before the corresponding public contracts

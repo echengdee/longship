@@ -64,7 +64,7 @@ planes.
 
 ```mermaid
 flowchart TB
-    Voice["Voice"] --> VoiceFront["Local VAD + ASR<br/>reserved command grammar first"]
+    Voice["Voice"] --> VoiceFront["Local Jackie + STOP KWS<br/>wake-gated VAD + ASR"]
     Keys["Keyboard / UI"] --> IG["Interaction Gateway"]
     VoiceFront --> IG
     WMS["Authorized API / WMS"] --> IG
@@ -140,6 +140,10 @@ flowchart TB
 `WorldStateSnapshot` is a shared contract between Layers 1, 3, 4, and 6. It is
 not a mutable global object. Consumers receive timestamped, versioned snapshots
 with confidence, frame, provenance, and freshness information.
+
+The concrete separation between a semantic Skill, its provider, Runtime,
+Safety, and a target adapter is specified in
+[Skills, Runtime, Navigation, and Target Boundaries](skills-and-runtime.md).
 
 ## 5. Two connected loops
 

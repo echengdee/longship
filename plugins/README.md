@@ -46,6 +46,9 @@ Recommended role separation:
 
 - `brains/<provider>` — event-driven high-level planning APIs;
 - `dialogue/<provider>` — open-ended conversation;
+- `skills/<skill-plugin>` — optional semantic capability implementations;
+- `navigation/<provider>` — mapping, localization, planning, and controller
+  integrations behind the navigation Skill contract;
 - `speech/asr/<provider>` and `speech/tts/<provider>` — independent audio roles;
 - `perception/<provider>` — versioned detection, tracking, or scene interpretation;
 - `policies/groot` or `policies/unifolm` — bounded VLA policy adapters;
@@ -57,10 +60,28 @@ The first executable examples follow these boundaries:
 
 - [`brains/codex_local`](brains/codex_local/) is the experimental, opt-in,
   non-actuating reference high-level Brain provider;
+- [`speech/voice_inputs/jackie_sherpa_onnx`](speech/voice_inputs/jackie_sherpa_onnx/)
+  reserves a local Jackie KWS/VAD/ASR composition without bundling or activating
+  model artifacts;
 - [`targets/unitree_g1`](targets/unitree_g1/) wraps a small, bounded portion of
   the official high-level SDK behind a default-off hardware gate; and
 - [`locomotion/unitree_rl_lab`](locomotion/unitree_rl_lab/) reserves an external
   policy seam without copying or activating model weights.
+
+A deployment may package capture, Jackie and reserved-STOP KWS, VAD, and ASR as
+one `voice_input` composition when those stages must share one microphone
+stream. The STOP spotter remains always on and safety-only; ordinary dictation
+ASR remains wake-gated. The composition still emits the provider-neutral
+`VoiceInputEvent` contract; it does not own Runtime, Codex, command
+authorization, TTS, or actuators. This avoids several plugins racing to open
+the same audio device while keeping the individual stages replaceable inside
+the composition.
+
+For robot capabilities, distinguish a semantic Skill from its provider. For
+example, `navigation.navigate_to` is a Skill; Nav2 is a navigation provider;
+and Unitree message/frame translation is a target adapter. See
+[Skills, Runtime, Navigation, and Target Boundaries](../docs/architecture/skills-and-runtime.md)
+and the [`plugins/skills` guidance](skills/README.md).
 
 A plugin references, but does not copy, its upstream repository. Production
 preflight resolves and verifies a reviewed artifact lock, checks license and
