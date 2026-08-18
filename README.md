@@ -42,11 +42,12 @@ separately:
 6. **Evaluation** — reproducible tests and gates for capability promotion.
 
 When high-level AI is enabled, Longship's public reference path uses **Codex
-as the Brain**. Longship's context builder supplies Codex with a bounded
-snapshot of knowledge, Longship-owned memory, world state, and currently
-available Skills. The runtime treats Codex's result as an untrusted high-level
-proposal. The V0 implementation currently sends only authoritative tour state
-and its action allowlist. Fixed controls and every stop path bypass Codex.
+as the Brain**. In the target architecture, a Longship-owned context builder
+will supply Codex with a bounded snapshot of knowledge, Longship-owned memory,
+world state, and currently available Skills. The runtime treats Codex's result
+as an untrusted high-level proposal. The V0 implementation currently sends
+only authoritative tour state and its action allowlist. Fixed controls and
+every stop path bypass Codex.
 
 Collecting more data is not enough. Physical intelligence needs a disciplined
 path from context to action, from action to evidence, and from evidence to a
@@ -103,9 +104,15 @@ The **scene loop** shows the target architecture rather than claiming every
 node is implemented in V0. It is intended to turn a real task into structured
 experience.
 Codex is the reference high-level Brain, not the owner of robot state, memory,
-audio transport, or actuator authority. The **ecosystem loop** lets people
-contribute compatible contracts, plugins, and benchmarks without coupling the
-project to one underlying model, simulator, or robot.
+audio transport, or actuator authority. The **ecosystem loop** is designed to
+let people contribute compatible contracts, plugins, and benchmarks without
+coupling the project to one underlying model, simulator, or robot.
+
+The long-term
+[Physical Intelligence Co-Evolution vision](docs/vision/physical-intelligence-coevolution.md)
+explains the motivation and proposed knowledge-Skill-experience-model feedback
+loop. It describes a target direction, not the repository's current
+implementation status.
 
 The detailed [System Architecture v2](docs/architecture/system-architecture-v2.md)
 proposal adds deterministic keyboard and reserved-voice controls that bypass
