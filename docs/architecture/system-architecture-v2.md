@@ -7,20 +7,27 @@
 
 ## 1. Purpose
 
-Longship is a contracts-first physical-intelligence platform for capabilities
-that can move across robot embodiments, tasks, model providers, and deployment
-sites without giving up safety, explainability, or accumulated experience.
+Longship is designed as a contracts-first physical-intelligence platform for
+capabilities that can move across robot embodiments, tasks, model providers,
+and deployment sites without giving up safety, explainability, or accumulated
+experience.
 
-The architecture supports tasks such as material transport, spoken guidance,
-table organization, object retrieval, and production-line assistance. A user
-may issue a goal by voice or keyboard. The robot should explain important state
-changes in ordinary language, while engineers retain access to synchronized
-diagnostics, camera streams, telemetry, and replay.
+The target architecture is intended to support tasks such as material
+transport, spoken guidance, table organization, object retrieval, and
+production-line assistance. A user may issue a goal by voice or keyboard. The
+robot should explain important state changes in ordinary language, while
+engineers retain access to synchronized diagnostics, camera streams,
+telemetry, and replay.
 
 The six architectural layers remain responsibility boundaries. They are not a
 pipeline that every task must traverse from top to bottom on every cycle.
-Longship instead operates as two connected loops with three cross-cutting
+The target design is organized as two connected loops with three cross-cutting
 planes.
+
+The strategic rationale behind these responsibility boundaries is described in
+the [Physical Intelligence Co-Evolution vision](../vision/physical-intelligence-coevolution.md).
+That document explains why the feedback loops matter; this document specifies
+their target technical boundaries and invariants.
 
 ### Non-goals
 
@@ -61,6 +68,9 @@ planes.
 17. Codex is the reference high-level Brain, while Longship owns canonical memory, context assembly, voice transport, validation, and execution state.
 
 ## 3. System topology
+
+The diagram below is the target topology. The current executable repository
+implements only the Voice Tour V0 slice described in the README.
 
 ```mermaid
 flowchart TB
