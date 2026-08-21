@@ -423,6 +423,18 @@ localization service must use the same monotonic clock domain. The ROS source
 accepts `rgb8` and `bgr8` images only; the D435i driver is configured to
 publish `rgb8`.
 
+The robot's combined PyTorch and ROS 2 container must source Jazzy before it
+starts a live NoMaD process. For the current deployment, use:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd /workspace/longship
+export PYTHONPATH="$PWD/src:$PWD/plugins/policies/visual_navigation/nomad:$PWD:$PYTHONPATH"
+```
+
+This keeps the ROS 2 Python packages and the container's PyTorch packages on
+the same Python 3.12 import path.
+
 The source returns already decoded tensors and timestamps from the same
 `camera` clock domain. The producer rejects profile or ordering changes,
 clears context after a source gap, and samples with a fixed 9 Hz time grid.
