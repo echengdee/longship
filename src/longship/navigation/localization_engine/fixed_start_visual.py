@@ -88,6 +88,7 @@ class FixedStartVisualTrackingProfile:
     relative_advance_confirmations: int = 2
     lookahead_close_confirmations: int = 2
     relocalization_candidate_count: int = 8
+    relocalization_goal_backtrack_count: int = 2
     relocalization_close_confirmations: int = 2
     belief_publish_period_s: float = 0.25
     max_observation_age_s: float = 0.2
@@ -142,6 +143,9 @@ class FixedStartVisualTrackingProfile:
             or self.lookahead_close_confirmations <= 0
             or self.relocalization_candidate_count
             < self.tracking_candidate_count
+            or self.relocalization_goal_backtrack_count < 0
+            or self.relocalization_goal_backtrack_count
+            >= self.relocalization_candidate_count
             or self.relocalization_close_confirmations <= 0
         ):
             raise ValueError("tracking counts and candidate windows are invalid")
@@ -419,13 +423,18 @@ class FixedStartVisualLocalizationEngine:
         if self._current_index is None:
             start_index = 0
             candidate_count = self._profile.tracking_candidate_count
+        elif self._phase == FixedStartVisualPhase.LOCALIZATION_LOST:
+            if self._target_index is None:
+                return ()
+            start_index = max(
+                0,
+                self._target_index
+                - self._profile.relocalization_goal_backtrack_count,
+            )
+            candidate_count = self._profile.relocalization_candidate_count
         else:
             start_index = self._current_index
-            candidate_count = (
-                self._profile.relocalization_candidate_count
-                if self._phase == FixedStartVisualPhase.LOCALIZATION_LOST
-                else self._profile.tracking_candidate_count
-            )
+            candidate_count = self._profile.tracking_candidate_count
         end_index = min(len(self._bindings), start_index + candidate_count)
         return tuple(range(start_index, end_index))
 
@@ -766,7 +775,7 @@ class FixedStartVisualLocalizationEngine:
         observation_time: TimePoint,
         now: TimePoint,
     ) -> LocationBelief:
-        """Searches a wider monotonic window after local evidence is lost."""
+        """Searches a goal-centered, forward-biased window after local loss."""
 
         best_index, best_distance = min(
             distances.items(),

@@ -393,6 +393,43 @@ class FixedStartVisualLocalizationTests(unittest.IsolatedAsyncioTestCase):
             6,
         )
 
+    async def test_relocalization_searches_around_the_pending_goal(self) -> None:
+        map_engine = self._map_engine(node_count=7)
+        engine, policy = await self._create(
+            [
+                self._distances(2.0, 10.0, 15.0),
+                self._distances(2.0, 10.0, 15.0),
+                self._distances(8.0, 2.0, 10.0),
+                self._distances(8.0, 2.0, 10.0, offset=1),
+                self._distances(19.0, 19.0, 19.0, offset=2),
+                self._distances(19.0, 19.0, 19.0, offset=2),
+                self._distances(19.0, 19.0, 19.0, offset=2),
+                self._distances(19.0, 19.0, 19.0, 19.0, 19.0, 19.0, offset=1),
+            ],
+            map_engine=map_engine,
+        )
+        await engine.tick(self._time(1))
+        await engine.tick(self._time(2))
+        await engine.tick(self._time(3))
+        advanced = await engine.tick(self._time(4))
+        self.assertEqual(
+            advanced.hypotheses[0].topological_location,
+            NodeLocation(node_id=NodeId("node-0002")),
+        )
+        await engine.tick(self._time(5))
+        await engine.tick(self._time(6))
+        lost = await engine.tick(self._time(7))
+        self.assertEqual(lost.status, LocalizationStatus.LOST)
+
+        await engine.tick(self._time(8))
+        self.assertEqual(
+            tuple(
+                candidate.target_node_id
+                for candidate in policy.requests[-1].candidates
+            ),
+            tuple(NodeId(f"node-{index:04d}") for index in range(1, 7)),
+        )
+
     async def test_rejects_incompatible_goal_image_profile(self) -> None:
         incompatible_map = self._map_engine(image_profile="other-profile")
 

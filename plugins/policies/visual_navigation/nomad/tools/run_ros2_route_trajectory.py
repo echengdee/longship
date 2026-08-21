@@ -300,6 +300,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--relative-distance-maximum", type=float, default=5.0)
     parser.add_argument("--lookahead-close-confirmations", type=int, default=2)
     parser.add_argument("--relocalization-candidate-count", type=int, default=8)
+    parser.add_argument(
+        "--relocalization-goal-backtrack-count",
+        type=int,
+        default=2,
+    )
     parser.add_argument("--relocalization-close-confirmations", type=int, default=2)
     parser.add_argument("--belief-publish-period-s", type=float, default=0.25)
     parser.add_argument("--num-candidates", type=int, default=8)
@@ -655,6 +660,9 @@ async def _run(args: argparse.Namespace) -> None:
                 ),
                 relocalization_candidate_count=(
                     args.relocalization_candidate_count
+                ),
+                relocalization_goal_backtrack_count=(
+                    args.relocalization_goal_backtrack_count
                 ),
                 relocalization_close_confirmations=(
                     args.relocalization_close_confirmations
