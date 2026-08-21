@@ -429,11 +429,28 @@ starts a live NoMaD process. For the current deployment, use:
 ```bash
 source /opt/ros/jazzy/setup.bash
 cd /workspace/longship
-export PYTHONPATH="$PWD/src:$PWD/plugins/policies/visual_navigation/nomad:$PWD:$PYTHONPATH"
+export PYTHONPATH="$PWD/src:$PWD/plugins/policies/visual_navigation/nomad:"\
+"$PWD:$PYTHONPATH"
 ```
 
 This keeps the ROS 2 Python packages and the container's PyTorch packages on
 the same Python 3.12 import path.
+
+To compose live RGB observations into localization, planning, and the public
+`LocalTrajectoryStream` without commanding the robot, run:
+
+```bash
+python plugins/policies/visual_navigation/nomad/tools/run_ros2_route_trajectory.py \
+  --checkpoint /assets/nomad.pth \
+  --topomap /assets/adaptive_topomap \
+  --device cuda:0 \
+  --route-plan-output /tmp/nomad-live-route-plan.json \
+  --trajectory-output /tmp/nomad-live-trajectories.jsonl
+```
+
+The tool defaults to 30 seconds. Pass `--run-seconds 0` only for a supervised,
+continuous diagnostic session. It writes trajectory proposals only; it does
+not import or invoke a chassis controller.
 
 The source returns already decoded tensors and timestamps from the same
 `camera` clock domain. The producer rejects profile or ordering changes,
