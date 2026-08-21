@@ -405,7 +405,12 @@ async def _wait_for_initial_location(
             ):
                 raise RuntimeError(
                     "ROS 2 source stopped before fixed-start localization "
-                    "became usable"
+                    "became usable: "
+                    f"state={producer_status.state.value}, "
+                    f"detail={producer_status.detail_code}, "
+                    f"error={producer_status.last_error}, "
+                    f"received={producer_status.frames_received}, "
+                    f"submitted={producer_status.frames_submitted}"
                 )
             update = await engine.wait_for_update(
                 WaitForUpdateRequest(
