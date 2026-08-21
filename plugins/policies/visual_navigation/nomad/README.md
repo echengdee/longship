@@ -453,6 +453,25 @@ The tool defaults to 30 seconds. Pass `--run-seconds 0` only for a supervised,
 continuous diagnostic session. It writes trajectory proposals only; it does
 not import or invoke a chassis controller.
 
+For a camera-motion diagnostic where the map target must remain `node-0001`,
+use the fixed-goal recorder instead:
+
+```bash
+python plugins/policies/visual_navigation/nomad/tools/run_ros2_fixed_goal_video.py \
+  --checkpoint /assets/nomad.pth \
+  --topomap /assets/adaptive_topomap \
+  --device cuda:0 \
+  --source-node node-0000 \
+  --goal-node node-0001 \
+  --output /tmp/nomad-fixed-node-0001.avi \
+  --run-seconds 0
+```
+
+This recorder does not run localization or planning, never advances the route,
+and issues no robot commands. Every rendered frame therefore uses the same
+`node-0000 -> node-0001` visual-goal pair; only the live RGB input can change
+the NoMaD candidate trajectories.
+
 With `--overlay-video-output`, it writes one MJPEG/AVI frame for every `ACTIVE`
 trajectory proposal. The encoded frame rate defaults to the steady trajectory
 inference rate (`1 / --belief-publish-period-s`, 4 Hz by default), and can be

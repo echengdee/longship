@@ -147,9 +147,14 @@ class LiveTrajectoryVideoWriter:
             ),
             _overlay_state(publication, frame, goal_image=goal_image),
         )
+        self.write_rendered(rendered)
+
+    def write_rendered(self, frame: Image.Image) -> None:
+        """Writes a pre-rendered RGB diagnostic frame."""
+
         if self._writer is None:
-            self._writer = self._open_writer(rendered.size)
-        self._write_rgb_frame(rendered)
+            self._writer = self._open_writer(frame.size)
+        self._write_rgb_frame(frame)
         self.frames_written += 1
 
     def close(self) -> None:
