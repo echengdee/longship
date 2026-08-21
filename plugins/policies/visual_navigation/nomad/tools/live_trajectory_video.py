@@ -92,7 +92,9 @@ class ObservationFrameCache(NomadObservationSink):
 
     def clear_observations(self) -> None:
         self._sink.clear_observations()
-        self._frames.clear()
+        # A source gap resets model context, but an already-started inference
+        # may still legally publish its exact pre-gap observation. Keep the
+        # bounded render cache so diagnostics cannot affect the Harness.
 
     def attach_source_timestamp(
         self, observation_time_s: float, source_timestamp_s: float | None

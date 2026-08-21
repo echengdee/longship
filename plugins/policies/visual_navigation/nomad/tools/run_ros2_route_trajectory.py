@@ -247,8 +247,18 @@ class _TrajectoryCollector:
             goal_image=goal_image,
         )
         if publication.state == LocalTrajectoryState.ACTIVE and not wrote:
-            raise RuntimeError(
-                "missing cached source frame for active trajectory publication"
+            print(
+                json.dumps(
+                    {
+                        "kind": "overlay_frame_unavailable",
+                        "publication_revision": publication.revision.sequence,
+                        "observation_time": _jsonable(
+                            publication.observation_time
+                        ),
+                    },
+                    sort_keys=True,
+                ),
+                flush=True,
             )
 
 
