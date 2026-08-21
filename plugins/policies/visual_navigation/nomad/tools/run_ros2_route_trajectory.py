@@ -19,6 +19,8 @@ import math
 from pathlib import Path
 import time
 
+from PIL import Image
+
 from longship.navigation.common import TimePoint
 from longship.navigation.local_trajectory_engine import (
     LocalTrajectoryEngineConfig,
@@ -87,6 +89,7 @@ from longship_adapter import (
     NomadVisualGoalTrajectoryPolicy,
     NomadVisualPolicyConfig,
     create_nomad_topomap_engine,
+    resolve_visual_target_goal,
 )
 from nomad_runtime import (
     NomadConfig,
@@ -97,6 +100,12 @@ from nomad_runtime import (
 from tools.ros2_image_source import (
     Ros2ImageFrameSource,
     Ros2ImageFrameSourceConfig,
+)
+from tools.live_trajectory_video import (
+    LiveTrajectoryVideoWriter,
+    ObservationFrameCache,
+    as_rgb_image,
+    write_publication_frame,
 )
 
 
@@ -113,6 +122,44 @@ class _TrajectoryRecord:
     publication: LocalTrajectoryPublication
 
 
+class _GoalImageCache:
+    """Loads one digest-verified target image per map node for rendering."""
+
+    def __init__(
+        self,
+        *,
+        map_engine: MapEngine,
+        snapshot: MapSnapshot,
+        goal_image_loader: LocalFileGoalImageLoader,
+    ) -> None:
+        self._map_engine = map_engine
+        self._snapshot = snapshot
+        self._goal_image_loader = goal_image_loader
+        self._images: dict[NodeId, Image.Image] = {}
+
+    async def get(self, publication: LocalTrajectoryPublication) -> Image.Image | None:
+        target_node_id = publication.target_node_id
+        if target_node_id is None:
+            return None
+        cached = self._images.get(target_node_id)
+        if cached is not None:
+            return cached
+        binding = await resolve_visual_target_goal(
+            map_engine=self._map_engine,
+            snapshot=self._snapshot,
+            target_node_id=target_node_id,
+        )
+        decoded = self._goal_image_loader.load(binding.resource)
+        image = as_rgb_image(
+            decoded.image,
+            layout=decoded.layout,
+            channel_order=decoded.channel_order,
+            value_range=decoded.value_range,
+        )
+        self._images[target_node_id] = image
+        return image
+
+
 class _TrajectoryCollector:
     """Writes the exact stream consumed by a future controller adapter."""
 
@@ -123,11 +170,17 @@ class _TrajectoryCollector:
         producer: NomadObservationProducer,
         output_path: Path | None,
         update_timeout_s: float,
+        overlay_frame_cache: ObservationFrameCache | None = None,
+        overlay_video_writer: LiveTrajectoryVideoWriter | None = None,
+        goal_image_cache: _GoalImageCache | None = None,
     ) -> None:
         self._stream = stream
         self._producer = producer
         self._output_path = output_path
         self._update_timeout_s = update_timeout_s
+        self._overlay_frame_cache = overlay_frame_cache
+        self._overlay_video_writer = overlay_video_writer
+        self._goal_image_cache = goal_image_cache
         self.records: list[_TrajectoryRecord] = []
 
     async def run(self) -> None:
@@ -166,6 +219,7 @@ class _TrajectoryCollector:
                     output.write(line)
                     output.write("\n")
                     output.flush()
+                await self._write_overlay(publication)
                 revision = publication.revision
                 if publication.state in (
                     LocalTrajectoryState.ROUTE_COMPLETED,
@@ -175,6 +229,27 @@ class _TrajectoryCollector:
         finally:
             if output is not None:
                 output.close()
+            if self._overlay_video_writer is not None:
+                self._overlay_video_writer.close()
+
+    async def _write_overlay(
+        self, publication: LocalTrajectoryPublication
+    ) -> None:
+        if self._overlay_video_writer is None:
+            return
+        if self._overlay_frame_cache is None or self._goal_image_cache is None:
+            raise RuntimeError("overlay writer dependencies are incomplete")
+        goal_image = await self._goal_image_cache.get(publication)
+        wrote = write_publication_frame(
+            cache=self._overlay_frame_cache,
+            writer=self._overlay_video_writer,
+            publication=publication,
+            goal_image=goal_image,
+        )
+        if publication.state == LocalTrajectoryState.ACTIVE and not wrote:
+            raise RuntimeError(
+                "missing cached source frame for active trajectory publication"
+            )
 
 
 def _parse_args() -> argparse.Namespace:
@@ -240,6 +315,22 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--route-plan-output", type=Path)
     parser.add_argument("--trajectory-output", type=Path)
+    parser.add_argument(
+        "--overlay-video-output",
+        type=Path,
+        help=(
+            "Write one RGB overlay frame per active NoMaD trajectory proposal. "
+            "The overlay uses policy-native robot-frame coordinates."
+        ),
+    )
+    parser.add_argument(
+        "--overlay-video-fps",
+        type=float,
+        help=(
+            "Encoded frame rate; defaults to the steady trajectory inference "
+            "rate (1 / belief-publish-period-s)."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -423,6 +514,11 @@ def _validate_args(args: argparse.Namespace) -> None:
         or args.center_crop_aspect <= 0.0
     ):
         raise ValueError("center_crop_aspect must be finite and positive")
+    if args.overlay_video_fps is not None and (
+        not math.isfinite(args.overlay_video_fps)
+        or args.overlay_video_fps <= 0.0
+    ):
+        raise ValueError("overlay_video_fps must be finite and positive")
 
 
 async def _run(args: argparse.Namespace) -> None:
@@ -507,6 +603,23 @@ async def _run(args: argparse.Namespace) -> None:
         observation_fanout = NomadObservationFanout(
             (distance_policy, trajectory_policy)
         )
+        overlay_video_writer = (
+            None
+            if args.overlay_video_output is None
+            else LiveTrajectoryVideoWriter(
+                args.overlay_video_output.expanduser().resolve(),
+                frames_per_second=(
+                    1.0 / args.belief_publish_period_s
+                    if args.overlay_video_fps is None
+                    else args.overlay_video_fps
+                ),
+            )
+        )
+        overlay_frame_cache = (
+            None
+            if overlay_video_writer is None
+            else ObservationFrameCache(observation_fanout)
+        )
         localization_engine = await FixedStartVisualLocalizationEngine.create(
             map_engine=map_engine,
             snapshot=snapshot,
@@ -549,7 +662,11 @@ async def _run(args: argparse.Namespace) -> None:
         )
         producer = NomadObservationProducer(
             source=source,
-            policy=observation_fanout,
+            policy=(
+                observation_fanout
+                if overlay_frame_cache is None
+                else overlay_frame_cache
+            ),
             config=NomadObservationProducerConfig(
                 image_profile_id=args.image_profile_id,
                 sample_hz=args.observation_sample_hz,
@@ -626,6 +743,17 @@ async def _run(args: argparse.Namespace) -> None:
                 else args.trajectory_output.expanduser().resolve()
             ),
             update_timeout_s=args.trajectory_update_timeout_s,
+            overlay_frame_cache=overlay_frame_cache,
+            overlay_video_writer=overlay_video_writer,
+            goal_image_cache=(
+                None
+                if overlay_video_writer is None
+                else _GoalImageCache(
+                    map_engine=map_engine,
+                    snapshot=snapshot,
+                    goal_image_loader=goal_image_loader,
+                )
+            ),
         )
         collector_task = asyncio.create_task(
             collector.run(),
@@ -634,6 +762,8 @@ async def _run(args: argparse.Namespace) -> None:
         await trajectory_service.start()
         if args.run_seconds > 0.0:
             await asyncio.sleep(args.run_seconds)
+            if collector_task.done():
+                await collector_task
         else:
             await collector_task
         summary = {
@@ -651,6 +781,16 @@ async def _run(args: argparse.Namespace) -> None:
             "runtime_state": runtime.get_status().state.value,
             "trajectory_service_state": (
                 trajectory_service.get_status().state.value
+            ),
+            "overlay_video": (
+                None
+                if overlay_video_writer is None
+                else str(args.overlay_video_output.expanduser().resolve())
+            ),
+            "overlay_frames_written": (
+                0
+                if overlay_video_writer is None
+                else overlay_video_writer.frames_written
             ),
         }
         print(json.dumps(summary, sort_keys=True), flush=True)
