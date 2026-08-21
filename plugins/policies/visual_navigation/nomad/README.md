@@ -412,6 +412,17 @@ deployment-owned implementations. `NomadObservationProducer` is the narrow
 NoMaD adapter between that decoded source and the plugin policy ingress. None
 of them belongs to the public Localization Engine Facade.
 
+For the D435i ROS 2 deployment, use
+`tools.ros2_image_source.Ros2ImageFrameSource` as the decoded source. It
+subscribes to `/camera/camera/color/image_raw` with best-effort QoS and depth
+one, so it consumes the newest RGB frame without opening `/dev/video*` or
+owning the camera. Its policy timestamp uses local `time.monotonic()` and its
+separate source timestamp preserves `sensor_msgs/Image.header.stamp` for
+sampling and gap detection. The injected `TimeSource` for both the policy and
+localization service must use the same monotonic clock domain. The ROS source
+accepts `rgb8` and `bgr8` images only; the D435i driver is configured to
+publish `rgb8`.
+
 The source returns already decoded tensors and timestamps from the same
 `camera` clock domain. The producer rejects profile or ordering changes,
 clears context after a source gap, and samples with a fixed 9 Hz time grid.
