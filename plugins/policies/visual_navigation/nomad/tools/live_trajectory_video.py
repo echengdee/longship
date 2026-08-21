@@ -119,7 +119,7 @@ class ObservationFrameCache(NomadObservationSink):
 
 
 class LiveTrajectoryVideoWriter:
-    """Writes one diagnostic MP4 frame per accepted trajectory proposal."""
+    """Writes one diagnostic MJPEG/AVI frame per accepted trajectory proposal."""
 
     def __init__(self, output_path: Path, *, frames_per_second: float) -> None:
         if not math.isfinite(frames_per_second) or frames_per_second <= 0.0:
@@ -161,6 +161,11 @@ class LiveTrajectoryVideoWriter:
         except ImportError as error:
             raise RuntimeError("OpenCV is required to encode overlay video") from error
         self._output_path.parent.mkdir(parents=True, exist_ok=True)
+        if self._output_path.suffix.lower() != ".avi":
+            raise ValueError(
+                "live overlay output must use the supported '.avi' suffix: "
+                f"{self._output_path}"
+            )
         if self._output_path.exists():
             raise FileExistsError(
                 "overlay video already exists; choose a new output path: "
@@ -168,14 +173,14 @@ class LiveTrajectoryVideoWriter:
             )
         writer = cv2.VideoWriter(
             str(self._output_path),
-            cv2.VideoWriter_fourcc(*"mp4v"),
+            cv2.VideoWriter_fourcc(*"MJPG"),
             self._frames_per_second,
             size,
         )
         if not writer.isOpened():
             writer.release()
             raise RuntimeError(
-                "OpenCV could not open the requested MP4 output: "
+                "OpenCV could not open the requested MJPEG/AVI output: "
                 f"{self._output_path}"
             )
         return writer

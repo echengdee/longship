@@ -446,14 +446,14 @@ python plugins/policies/visual_navigation/nomad/tools/run_ros2_route_trajectory.
   --device cuda:0 \
   --route-plan-output /tmp/nomad-live-route-plan.json \
   --trajectory-output /tmp/nomad-live-trajectories.jsonl \
-  --overlay-video-output /tmp/nomad-live-overlay.mp4
+  --overlay-video-output /tmp/nomad-live-overlay.avi
 ```
 
 The tool defaults to 30 seconds. Pass `--run-seconds 0` only for a supervised,
 continuous diagnostic session. It writes trajectory proposals only; it does
 not import or invoke a chassis controller.
 
-With `--overlay-video-output`, it writes one MP4 frame for every `ACTIVE`
+With `--overlay-video-output`, it writes one MJPEG/AVI frame for every `ACTIVE`
 trajectory proposal. The encoded frame rate defaults to the steady trajectory
 inference rate (`1 / --belief-publish-period-s`, 4 Hz by default), and can be
 overridden with `--overlay-video-fps`. Each frame uses the exact RGB observation

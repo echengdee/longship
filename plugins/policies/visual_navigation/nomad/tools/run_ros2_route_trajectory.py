@@ -280,7 +280,7 @@ def _parse_args() -> argparse.Namespace:
         default=1.0 / 9.0,
     )
     parser.add_argument("--maximum-frame-gap-s", type=float, default=0.5)
-    parser.add_argument("--source-read-timeout-s", type=float, default=2.0)
+    parser.add_argument("--source-read-timeout-s", type=float, default=5.0)
     parser.add_argument("--max-observation-age-s", type=float, default=0.5)
     parser.add_argument("--publication-validity-s", type=float, default=0.5)
     parser.add_argument("--close-threshold", type=float, default=3.0)
@@ -319,7 +319,7 @@ def _parse_args() -> argparse.Namespace:
         "--overlay-video-output",
         type=Path,
         help=(
-            "Write one RGB overlay frame per active NoMaD trajectory proposal. "
+            "Write one MJPEG/AVI frame per active NoMaD trajectory proposal. "
             "The overlay uses policy-native robot-frame coordinates."
         ),
     )
@@ -327,7 +327,7 @@ def _parse_args() -> argparse.Namespace:
         "--overlay-video-fps",
         type=float,
         help=(
-            "Encoded frame rate; defaults to the steady trajectory inference "
+            "AVI frame rate; defaults to the steady trajectory inference "
             "rate (1 / belief-publish-period-s)."
         ),
     )
