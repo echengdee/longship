@@ -1,0 +1,1 @@
+"""Navigation harness contract tests."""

@@ -5,9 +5,10 @@ can grow without losing clarity, reliability, or safety.**
 
 > **Status:** Foundation stage. The repository now includes an independently
 > authored, experimental voice-tour V0 on a mock target and a testable Jackie
-> wake/dictation boundary. These are contract and runtime-learning slices, not
-> claims of autonomous navigation, production speech, or real-hardware
-> qualification.
+> wake/dictation boundary, plus early navigation Harness contracts and
+> offline-runnable reference components. These are contract and runtime-learning
+> slices, not claims of autonomous navigation, production speech, real-hardware
+> qualification, or a production robot-control or safety system.
 
 Longship is an independent open-source project for building practical,
 reusable capabilities for embodied machines. It is designed for small teams
@@ -173,7 +174,7 @@ The core also includes a provider-neutral Jackie voice session controller and
 deterministic mock input. It accepts ordinary final transcripts only after a
 matching `Jackie` wake event, while every partial transcript and unawakened
 final transcript is restricted to the local safety-only route. This lets a
-reserved `stop` / `停止` overtake a slow Brain call without treating the wake
+reserved stop alias overtake a slow Brain call without treating the wake
 phrase as authorization. See the [Jackie voice-input guide](docs/guides/jackie-voice-input-v0.md).
 
 No real microphone, wake model, ASR model, or TTS engine is activated by this
@@ -181,7 +182,7 @@ repository. The reserved
 [`jackie_sherpa_onnx`](plugins/speech/voice_inputs/jackie_sherpa_onnx/)
 integration records the intended local plugin and external-artifact boundary.
 
-Commands such as `stop` / `停止`, pause, resume, next, status, and cancel are
+Commands such as stop, pause, resume, next, status, and cancel are
 routed locally without Codex. Travel speech can overlap mock motion, while
 curated narration waits for arrival evidence. Unrecognised final text may use
 the optional, non-actuating Codex SDK provider (local app-server, not offline
@@ -292,6 +293,16 @@ longship/
 Most of this tree remains a roadmap, not a claim that every component already
 exists. The voice-tour V0 intentionally implements only the seams documented in
 its guide.
+
+The first Python framework slice now lives in `src/longship/navigation`. It
+defines the transport-neutral Mission, Map, Localization, Planning, and Local
+Trajectory Engine contracts, immutable `RoutePlan`, a trajectory-policy SPI,
+and the Harness-owned `LocalTrajectoryStream`. It also contains initial
+static-map, fixed-start visual localization, topological planning, and
+continuous RoutePlan-to-trajectory foundations. These are not production robot
+control or safety implementations. A thin
+`plugins/skills/navigation_harness` manifest exposes the future `navigate_to`
+Skill without moving the five engines out of the navigation subsystem.
 
 ## Plugin Model
 

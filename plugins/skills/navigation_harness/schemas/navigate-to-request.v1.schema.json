@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:plugin:navigation-harness:navigate-to-request:v1",
+  "title": "NavigateToRequest",
+  "description": "Draft semantic input for the navigation_harness navigate_to Skill.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "requested_at",
+    "map_selector",
+    "target"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.navigation.navigate-to-request.v1"
+    },
+    "requested_at": {
+      "$ref": "#/$defs/timePoint"
+    },
+    "map_selector": {
+      "$ref": "#/$defs/mapSelector"
+    },
+    "target": {
+      "$ref": "#/$defs/target"
+    },
+    "route_constraints": {
+      "$ref": "#/$defs/routeConstraints"
+    },
+    "route_preferences": {
+      "$ref": "#/$defs/routePreferences"
+    },
+    "initial_planning_context": {
+      "$ref": "#/$defs/planningContext"
+    },
+    "execution_limits": {
+      "$ref": "#/$defs/executionLimits"
+    },
+    "success_criteria": {
+      "$ref": "#/$defs/successCriteria"
+    },
+    "budget": {
+      "$ref": "#/$defs/budget"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "timePoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clock_id", "nanoseconds"],
+      "properties": {
+        "clock_id": {"$ref": "#/$defs/id"},
+        "nanoseconds": {"type": "integer", "minimum": 0}
+      }
+    },
+    "mapSelector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["map_id"],
+      "properties": {
+        "map_id": {"$ref": "#/$defs/id"},
+        "version": {"type": ["string", "null"], "minLength": 1},
+        "required_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_ref", "kind", "value"],
+      "properties": {
+        "target_ref": {"$ref": "#/$defs/id"},
+        "kind": {
+          "enum": ["place_id", "node_id", "anchor_id", "place_query"]
+        },
+        "value": {"type": "string", "minLength": 1},
+        "required_tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "allowed_place_kinds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "ambiguity_policy": {
+          "enum": ["require_unique", "select_top_ranked"]
+        }
+      }
+    },
+    "routeConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "robot_capabilities": {"$ref": "#/$defs/stringSet"},
+        "forbidden_segment_ids": {"$ref": "#/$defs/stringSet"},
+        "forbidden_node_ids": {"$ref": "#/$defs/stringSet"},
+        "forbidden_segment_tags": {"$ref": "#/$defs/stringSet"},
+        "max_total_distance_m": {"type": ["number", "null"], "minimum": 0},
+        "max_total_duration_s": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+    "routePreferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "objective": {"enum": ["shortest_distance", "fastest", "balanced"]},
+        "preferred_segment_tags": {"$ref": "#/$defs/stringSet"},
+        "avoided_segment_tags": {"$ref": "#/$defs/stringSet"}
+      }
+    },
+    "planningContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unavailable_segment_ids": {"$ref": "#/$defs/stringSet"},
+        "unavailable_node_ids": {"$ref": "#/$defs/stringSet"},
+        "extra_segment_costs": {
+          "type": "object",
+          "additionalProperties": {"type": "number", "minimum": 0}
+        }
+      }
+    },
+    "executionLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_speed_mps": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "route_timeout_s": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "segment_timeout_s": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "no_progress_timeout_s": {"type": ["number", "null"], "exclusiveMinimum": 0}
+      }
+    },
+    "successCriteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_localization_confidence": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "allow_degraded_localization": {"type": "boolean"},
+        "require_target_node": {"type": "boolean"},
+        "require_target_place": {"type": "boolean"},
+        "require_completion_anchor": {"type": "boolean"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mission_timeout_s": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "localization_wait_timeout_s": {"type": "number", "exclusiveMinimum": 0},
+        "max_relocalization_attempts": {"type": "integer", "minimum": 0},
+        "max_planning_attempts": {"type": "integer", "minimum": 0},
+        "max_route_submissions": {"type": "integer", "minimum": 0},
+        "max_same_route_retries": {"type": "integer", "minimum": 0}
+      }
+    },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

@@ -1,0 +1,27 @@
+plugin_id: longship.skill.navigation_harness
+plugin_version: 0.1.0
+api_version: 0.1.0
+kind: skill
+
+contracts:
+  navigate_to: 0.1.x
+  mission_task_graph: 1.x
+  runtime_event: 1.x
+
+exports:
+  skills:
+    - skill_id: navigate_to
+      interface: longship.navigation.skill:NavigateToSkill
+      input: longship.navigation.skill:NavigateToRequest
+      output: longship.navigation.skill:NavigateToResult
+      input_schema: schemas/navigate-to-request.v1.schema.json
+      output_schema: schemas/navigate-to-result.v1.schema.json
+      resources:
+        - resource: base
+          mode: exclusive
+      cancellable: true
+
+supported_targets:
+  - mock
+
+maturity: draft

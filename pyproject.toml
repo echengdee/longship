@@ -1,3 +1,22 @@
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "longship-robotics"
+version = "0.1.0a0"
+description = "Contracts-first, plugin-driven runtime experiments for open robotics"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+
+[project.optional-dependencies]
+codex = ["openai-codex>=0.144.4,<0.145"]
+test = ["pytest>=8.0"]
+
+[project.scripts]
+longship-tour = "longship.tour.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["longship*"]

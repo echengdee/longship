@@ -1,4 +1,4 @@
-"""Semantic navigation boundary used by scenarios and Skills."""
+"""Semantic navigation boundary and transport-neutral Harness contracts."""
 
 from .base import (
     NavigationAuthority,
