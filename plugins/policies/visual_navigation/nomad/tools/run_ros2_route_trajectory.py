@@ -212,6 +212,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--start-close-confirmations", type=int, default=2)
     parser.add_argument("--successor-close-confirmations", type=int, default=1)
     parser.add_argument("--normal-distance-maximum", type=float, default=15.0)
+    parser.add_argument(
+        "--untrusted-distance-minimum",
+        type=float,
+        default=18.0,
+    )
     parser.add_argument("--lost-confirmations", type=int, default=3)
     parser.add_argument("--tracking-candidate-count", type=int, default=3)
     parser.add_argument("--evidence-window-size", type=int, default=3)
@@ -514,6 +519,9 @@ async def _run(args: argparse.Namespace) -> None:
                     args.successor_close_confirmations
                 ),
                 normal_distance_maximum=args.normal_distance_maximum,
+                untrusted_distance_minimum=(
+                    args.untrusted_distance_minimum
+                ),
                 lost_confirmations=args.lost_confirmations,
                 tracking_candidate_count=args.tracking_candidate_count,
                 evidence_window_size=args.evidence_window_size,
