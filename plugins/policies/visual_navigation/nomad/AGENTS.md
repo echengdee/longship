@@ -110,3 +110,5 @@ NOMAD_CHECKPOINT=/absolute/path/to/nomad.pth
 ```
 
 Never add model checkpoints or generated inference images to git by default.
+The repository's explicitly approved exception is the released checkpoint at
+`models/nomad/nomad.pth`, which must remain Git-LFS tracked.

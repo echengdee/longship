@@ -40,7 +40,12 @@ from longship.navigation.runtime import (
     LocalizationRuntimeConfig,
     LocalizationRuntimeState,
 )
-from nomad_runtime import NomadConfig, NomadDistanceSession, NomadPolicy
+from nomad_runtime import (
+    NomadConfig,
+    NomadDistanceSession,
+    NomadPolicy,
+    default_checkpoint_path,
+)
 from longship_adapter import (
     LocalFileGoalImageLoader,
     NomadObservationProducer,
@@ -190,7 +195,12 @@ def _parse_args() -> argparse.Namespace:
             "NoMaD localization at an independent tick rate."
         )
     )
-    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=default_checkpoint_path(),
+        help="NoMaD checkpoint (default: repository LFS asset).",
+    )
     parser.add_argument("--video", type=Path, required=True)
     parser.add_argument("--topomap", type=Path, required=True)
     parser.add_argument(

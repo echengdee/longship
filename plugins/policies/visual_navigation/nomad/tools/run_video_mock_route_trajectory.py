@@ -87,6 +87,7 @@ from nomad_runtime import (
     NomadDistanceSession,
     NomadPolicy,
     NomadTrajectorySession,
+    default_checkpoint_path,
 )
 from tools.ffmpeg_video_source import (
     FfmpegVideoFrameSource,
@@ -197,7 +198,12 @@ def _parse_args() -> argparse.Namespace:
             "RoutePlan, and continuously publish complete NoMaD trajectories."
         )
     )
-    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=default_checkpoint_path(),
+        help="NoMaD checkpoint (default: repository LFS asset).",
+    )
     parser.add_argument("--video", type=Path, required=True)
     parser.add_argument("--topomap", type=Path, required=True)
     parser.add_argument("--device", default="cpu")

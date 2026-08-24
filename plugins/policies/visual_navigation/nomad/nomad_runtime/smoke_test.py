@@ -6,14 +6,19 @@ from pathlib import Path
 
 import torch
 
-from nomad_runtime import NomadConfig, NomadPolicy
+from nomad_runtime import NomadConfig, NomadPolicy, default_checkpoint_path
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Load a NoMaD checkpoint and run random tensor inference."
     )
-    parser.add_argument("--checkpoint", required=True, type=Path)
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=default_checkpoint_path(),
+        help="NoMaD checkpoint (default: repository LFS asset).",
+    )
     parser.add_argument(
         "--device",
         default="cuda" if torch.cuda.is_available() else "cpu",

@@ -12,7 +12,7 @@ report.
 | Resource | Local path | Purpose |
 | --- | --- | --- |
 | NoMaD plugin | `/home/qcraft/Workspace/longship/plugins/policies/visual_navigation/nomad` | PyTorch model, image ingress, checkpoint loading, inference, and offline topomap builder |
-| Checkpoint | `/home/qcraft/Workspace/visualnav-transformer/deployment/model_weights/nomad.pth` | Released NoMaD state dictionary |
+| Checkpoint | `models/nomad/nomad.pth` (Git LFS) | Released NoMaD state dictionary |
 | Source video | `/home/qcraft/Desktop/map-recording.mp4` | 30 Hz map-recording traversal used by the asynchronous video mock |
 | Dense replay | `/home/qcraft/Desktop/nomad_20260819_103700_analysis/dense_topomap` | 269 timestamped source images used to build and replay the map |
 | Control topomap | `/home/qcraft/Desktop/nomad_20260819_103700_analysis/adaptive_topomap_nomad_d6_12_safe` | Current 40-node directed control-goal map |
@@ -25,9 +25,9 @@ size:   76,473,631 bytes
 sha256: 70f79b8262527e20e56ced64a3e3d7ef91855bc9e7c3fa348d78edcb83c6a333
 ```
 
-The checkpoint, dense images, generated topomaps, and replay images are local
-artifacts. They are not stored in Git. A deployable harness must receive these
-paths or resolved immutable artifact references through configuration.
+Dense images, generated topomaps, and replay images are local artifacts. They
+are not stored in Git. The released checkpoint is the exception: it is tracked
+in Git LFS at `models/nomad/nomad.pth`; run `git lfs pull` after cloning.
 
 ## 2. What Exists and What Does Not
 

@@ -96,6 +96,7 @@ from nomad_runtime import (
     NomadDistanceSession,
     NomadPolicy,
     NomadTrajectorySession,
+    default_checkpoint_path,
 )
 from tools.ros2_image_source import (
     Ros2ImageFrameSource,
@@ -269,7 +270,12 @@ def _parse_args() -> argparse.Namespace:
             "publish NoMaD LocalTrajectoryStream records without commands."
         )
     )
-    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=default_checkpoint_path(),
+        help="NoMaD checkpoint (default: repository LFS asset).",
+    )
     parser.add_argument("--topomap", type=Path, required=True)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument(

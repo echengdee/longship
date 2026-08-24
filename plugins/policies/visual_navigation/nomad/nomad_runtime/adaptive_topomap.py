@@ -15,6 +15,7 @@ import torch
 from torch.nn import functional as F
 
 from nomad_runtime.image_input import ImageTensorSpec, canonicalize_image
+from nomad_runtime.assets import default_checkpoint_path
 from nomad_runtime.policy import NomadPolicy
 
 
@@ -602,7 +603,12 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Build a NoMaD-aware adaptive sequential topomap."
     )
     parser.add_argument("--images", type=Path, required=True)
-    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=default_checkpoint_path(),
+        help="NoMaD checkpoint (default: repository LFS asset).",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--frame-period-s", type=float)

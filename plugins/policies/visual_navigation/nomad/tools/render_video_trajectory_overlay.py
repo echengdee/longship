@@ -32,7 +32,12 @@ from longship.navigation.ports.trajectory_policy import (
     TrajectoryCandidateSet,
     VisualGoalTrajectoryRequest,
 )
-from nomad_runtime import NomadConfig, NomadPolicy, NomadTrajectorySession
+from nomad_runtime import (
+    NomadConfig,
+    NomadPolicy,
+    NomadTrajectorySession,
+    default_checkpoint_path,
+)
 from longship_adapter import (
     LocalFileGoalImageLoader,
     NomadTopomapMapConfig,
@@ -279,7 +284,12 @@ def _parse_args() -> argparse.Namespace:
             "video frame."
         )
     )
-    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=default_checkpoint_path(),
+        help="NoMaD checkpoint (default: repository LFS asset).",
+    )
     parser.add_argument("--video", type=Path, required=True)
     parser.add_argument("--topomap", type=Path, required=True)
     parser.add_argument(

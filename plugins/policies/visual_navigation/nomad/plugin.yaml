@@ -14,7 +14,7 @@ supported_targets: []
 
 artifacts:
   checkpoint:
-    bundled: false
+    bundled: true
     required_at_load: true
 
 maturity: draft

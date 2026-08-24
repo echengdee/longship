@@ -1,5 +1,6 @@
 """PyTorch-only NoMaD inference runtime."""
 
+from nomad_runtime.assets import default_checkpoint_path
 from nomad_runtime.config import NomadConfig
 from nomad_runtime.distance_session import (
     NomadDistanceBatchResult,
@@ -58,4 +59,5 @@ __all__ = [
     "ObservationContextNotReadyError",
     "StaleObservationContextError",
     "canonicalize_image",
+    "default_checkpoint_path",
 ]

@@ -36,7 +36,12 @@ from longship_adapter import (
     create_nomad_topomap_engine,
     resolve_visual_target_goal,
 )
-from nomad_runtime import NomadConfig, NomadPolicy, NomadTrajectorySession
+from nomad_runtime import (
+    NomadConfig,
+    NomadPolicy,
+    NomadTrajectorySession,
+    default_checkpoint_path,
+)
 from tools.live_trajectory_video import (
     LiveTrajectoryVideoWriter,
     ObservationFrameCache,
@@ -64,7 +69,12 @@ def _parse_args() -> argparse.Namespace:
             "without localization, route progression, or robot commands."
         )
     )
-    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=default_checkpoint_path(),
+        help="NoMaD checkpoint (default: repository LFS asset).",
+    )
     parser.add_argument("--topomap", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", default="cuda:0")

@@ -77,8 +77,10 @@ python -m pip install -e \
   ./plugins/policies/visual_navigation/nomad
 ```
 
-The checkpoint is a generated model artifact and is not stored in this
-repository. Pass its path explicitly at runtime.
+The released checkpoint is stored through Git LFS at
+`models/nomad/nomad.pth`. Every NoMaD command defaults to that path, while
+`--checkpoint` remains available to select another compatible checkpoint.
+After cloning, run `git lfs pull` before loading the model.
 
 The recorded-video mock additionally requires `ffmpeg` and `ffprobe` on the
 host. They are tool-only executables and are not model-runtime dependencies.
@@ -441,7 +443,6 @@ To compose live RGB observations into localization, planning, and the public
 
 ```bash
 python plugins/policies/visual_navigation/nomad/tools/run_ros2_route_trajectory.py \
-  --checkpoint /assets/nomad.pth \
   --topomap /assets/adaptive_topomap \
   --device cuda:0 \
   --route-plan-output /tmp/nomad-live-route-plan.json \
@@ -458,7 +459,6 @@ use the fixed-goal recorder instead:
 
 ```bash
 python plugins/policies/visual_navigation/nomad/tools/run_ros2_fixed_goal_video.py \
-  --checkpoint /assets/nomad.pth \
   --topomap /assets/adaptive_topomap \
   --device cuda:0 \
   --source-node node-0000 \
