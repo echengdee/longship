@@ -237,16 +237,32 @@ Rules:
 ```mermaid
 flowchart LR
     Skill["Validated SkillCall"] --> Router["Qualified Model Router"]
-    Router --> Runtime["Local process or isolated policy server"]
-    Runtime --> Candidate["Typed candidate output"]
-    Candidate --> Guard["Policy Guard + freshness checks"]
-    Guard --> Adapter["Target-specific action adapter"]
-    Adapter --> Arbiter["Command Arbiter"]
-    Arbiter --> Safety["Independent Safety Kernel"]
-    Safety --> Robot["Robot"]
+    Authority["Runtime authority<br/>safe points + live leases"] -. "handoff coordination" .-> Session
+    Lock["Immutable deployment lock<br/>artifact digest + target qualification"] -. "eligible binding only" .-> Session["Model Session Manager<br/>lifecycle + role binding"]
+    Session --> Router
 
-    Manifest["Plugin + artifact lock"] --> Router
-    Snapshot["Versioned observation snapshot"] --> Runtime
+    subgraph Providers["Provider seams: default blocked until qualified"]
+        Unitree["Unitree official G1 velocity<br/>candidate seam; artifact blocked"]
+        Holosoma["Holosoma G1<br/>candidate seam; artifact blocked"]
+        Groot["GR00T N1.7<br/>reference-only; no executable provider"]
+    end
+
+    Router -->|only after qualification| Unitree
+    Router -->|only after qualification| Holosoma
+    Router -. "reference only" .-> Groot
+    Unitree --> Worker["Single-flight Policy Worker<br/>local process or isolated server"]
+    Holosoma --> Worker
+    Worker --> Candidate["Typed PolicyCandidate"]
+    Candidate --> Guard["Policy Guard<br/>lease epoch + freshness + bounds"]
+    Guard --> Mapping["Pure target-qualified action mapping"]
+    Mapping --> Arbiter["Command Arbiter<br/>live binding + lease epoch + TTL"]
+    Authority -. "current binding + lease state" .-> Arbiter
+    Arbiter --> Safety["Independent Safety Kernel"]
+    Safety --> Adapter["Embodiment / target adapter<br/>epoch + TTL recheck at transport"]
+    Adapter --> Robot["Robot or simulator"]
+
+    Manifest["Approved manifest + verified artifacts"] --> Lock
+    Snapshot["Versioned observation snapshot"] --> Worker
     Health["Load / latency / output-age health"] --> Router
 ```
 
@@ -254,6 +270,12 @@ A model output is always a candidate. The policy guard validates schema, state
 version, action space, units, frame, normalization profile, bounds, output age,
 action horizon, resource ownership, and target qualification before forwarding
 anything. Safety retains final authority.
+
+The Model Session Manager manages provider lifecycle and role bindings; Runtime
+coordinates safe-point handoff and remains the live lease authority. The
+Command Arbiter revalidates the binding, lease epoch, and TTL at dispatch, and
+the target adapter rechecks epoch and TTL immediately before a transport side
+effect. A guard result therefore cannot preserve authority after revocation.
 
 An action-producing model call includes a unique call ID, observation version,
 model and adapter version, deadline, action horizon, and idempotency key.

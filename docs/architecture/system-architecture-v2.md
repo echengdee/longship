@@ -69,12 +69,16 @@ their target technical boundaries and invariants.
 
 ## 3. System topology
 
-The diagram below is the target topology. The current executable repository
-implements only the Voice Tour V0 slice described in the README.
+The diagram below is the target topology. The current repository implements
+the Voice Tour V0 slice plus provider-neutral policy guards, artifact caching,
+and synthetic Unitree and Holosoma candidate seams. The Model Session Manager,
+qualified routing, target action mapping, actuator arbitration, and real
+locomotion shown below remain target architecture only.
 
 ```mermaid
 flowchart TB
-    Voice["Voice"] --> VoiceFront["Local Jackie + STOP KWS<br/>wake-gated VAD + ASR"]
+    Voice["Voice"] --> StopKWS["Always-on local STOP KWS"]
+    Voice --> VoiceFront["Local Jackie wake<br/>wake-gated VAD + ASR"]
     Keys["Keyboard / UI"] --> IG["Interaction Gateway"]
     VoiceFront --> IG
     WMS["Authorized API / WMS"] --> IG
@@ -87,30 +91,53 @@ flowchart TB
     SkillsView["Current Skill Catalog"] --> Context
     State --> Context
     Context --> Brain["Codex Brain<br/>persistent thread + selected model"]
+    Sessions["Model Session Manager<br/>lifecycle + role bindings"] -. "brain binding" .-> Brain
     Brain --> Draft["TaskDraft: untrusted proposal"]
     Draft --> DecisionGate["Schema + revision + policy validation"]
     DecisionGate -->|task proposal| Compiler["Mission Compiler"]
     Compiler --> Mission["MissionContract"]
     Mission --> Runtime["Contextual Runtime"]
+    Runtime -. "safe-point handoff coordination" .-> Sessions
 
     Route -->|pause / resume / cancel / status| Control["RuntimeControlCommand"]
     Control --> ControlCheck["Authorization + freshness + version checks"]
     ControlCheck --> Runtime
 
-    Route -->|reserved STOP| Stop["Local Stop Dispatcher<br/>no model or safe-point wait"]
+    StopKWS --> Stop["Local Stop Dispatcher<br/>no model or safe-point wait"]
+    Route -->|reserved STOP| Stop
     Physical["Physical emergency stop"] --> HardStop["Safety-rated stop circuit<br/>or drive disable"]
     HardStop --> Target
     HardStop -. "status feedback only" .-> Safety["Independent Safety Kernel"]
     Stop --> Safety
 
-    Runtime --> Scheduler["Parallel DAG Scheduler<br/>resources + barriers + cancellation"]
+    Runtime --> Scheduler["Parallel DAG Scheduler<br/>leases + barriers + cancellation"]
+    Scheduler --> Navigation["Navigation Skills"]
     Scheduler --> Motion["Motion / Manipulation Skills"]
     Scheduler --> Interaction["Speech / Dialogue Skills"]
     Scheduler --> Perception["Perception / Monitoring Skills"]
 
-    Motion --> Arbiter["Command Arbiter"]
+    Navigation --> Arbiter["Command Arbiter<br/>live binding + lease epoch + TTL"]
+    Motion -->|deterministic provider| Arbiter
+    Motion -->|policy-backed| ModelRouter["Qualified Model Router"]
+    Sessions -. "policy binding" .-> ModelRouter
+
+    subgraph Providers["Model-provider seams: default disabled until qualified"]
+        UnitreePolicy["Unitree official G1 velocity<br/>candidate seam; artifact blocked"]
+        Holosoma["Holosoma G1<br/>candidate seam; artifact blocked"]
+        Groot["GR00T N1.7<br/>reference-only seam; blocked"]
+    end
+
+    ModelRouter -->|only after qualification| UnitreePolicy
+    ModelRouter -->|only after qualification| Holosoma
+    ModelRouter -. "reference only" .-> Groot
+    UnitreePolicy --> Candidate["Typed PolicyCandidate"]
+    Holosoma --> Candidate
+    Candidate --> PolicyGuard["Policy Guard<br/>lease epoch + freshness + bounds"]
+    PolicyGuard --> ActionMapping["Pure target-qualified action mapping"]
+    ActionMapping --> Arbiter
+    Runtime -. "live binding + lease authority" .-> Arbiter
     Arbiter --> Safety
-    Safety --> Adapter["Embodiment Adapter"]
+    Safety --> Adapter["Embodiment / target adapter<br/>epoch + TTL recheck at transport"]
     Adapter --> Target["Robot or Simulator"]
 
     Runtime --> Events["Authoritative Runtime Events"]
@@ -124,17 +151,39 @@ flowchart TB
     Target --> State["Versioned World State"]
     Perception --> State
     State --> Runtime
-    State --> Obs["Observability Gateway"]
+    Target --> Telemetry["Edge Telemetry Agent<br/>joints + pose + thermal + communications"]
+    Events --> Telemetry
+    Camera["Compressed camera streams"] --> Media["Media Gateway"]
+    Telemetry --> Obs["Observability Gateway"]
+    Media --> Obs
     Obs --> Operator["Operator View"]
     Obs --> Engineer["Engineering View + Replay"]
     State --> Episode["ExperienceEpisode"]
     Episode --> Evolution["Replay / Simulation / Candidate Evolution"]
     Evolution --> Eval["Evaluation + Promotion Gate"]
-    Eval -. approved artifacts only .-> Compiler
-    Eval -. approved artifacts only .-> Scheduler
+
+    subgraph Governance["Artifact governance: offline / deployment plane"]
+        Upstream["Pinned upstream references"] --> Manifests["Plugin + artifact manifests"]
+        Manifests --> Approval["Independent license + access approval"]
+        Authorized["Authorized external bytes<br/>deployment-injected transport"] --> Store["Size + SHA-256 verification<br/>private atomic cache"]
+        Approval --> Store
+        Store --> DeploymentLock["Immutable deployment lock<br/>target qualification required"]
+    end
+
+    Eval -. "qualification evidence" .-> DeploymentLock
+    Eval -. "approved Skills / scenarios only" .-> Compiler
+    DeploymentLock -. "eligible bindings only" .-> Sessions
 
     Safety -. "revoke motion leases; cancel or duck speech" .-> Scheduler
 ```
+
+The Unitree official G1 velocity and Holosoma integrations shown above are
+side-effect-free candidate seams whose artifacts remain blocked by default.
+GR00T is reference-only. The Unitree policy seam is distinct from the
+downstream Unitree target adapter: provider selection does not grant a resource
+lease or actuator authority, and every executable path still converges through
+target-qualified mapping, live authority revalidation, independent Safety, and
+a final epoch and TTL check at the transport side-effect boundary.
 
 ## 4. Six responsibility layers
 
@@ -634,13 +683,14 @@ behavior.
 
 ```mermaid
 flowchart LR
-    Robot["Robot sensors and controllers"] --> Agent["Edge Telemetry Agent"]
+    Robot["Robot sensors and controllers<br/>joint angles + full-body pose<br/>temperature + communication health"] --> Agent["Edge Telemetry Agent<br/>timestamp + validate + downsample"]
     Runtime["Runtime events"] --> Agent
+    Safety["Safety events"] --> Agent
     Agent --> Bus["Telemetry / Event Gateway"]
     Bus --> Live["Live dashboards"]
     Bus --> Metrics["Logs / metrics / traces"]
     Agent --> Recorder["Time-synchronized recorder"]
-    Camera["Compressed camera streams"] --> Media["Media gateway"]
+    Camera["Compressed camera streams<br/>separate high-bandwidth transport"] --> Media["Media Gateway"]
     Media --> Live
     Media --> Recorder
     Recorder --> Store["External artifact storage"]

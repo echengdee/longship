@@ -56,48 +56,72 @@ safer next capability.
 ## Two Connected Loops
 
 ```mermaid
-flowchart LR
-    Safe["Independent safety"]
-
+flowchart TB
     subgraph Scene["Scene loop"]
         Voice["Voice"] --> StopKWS["Always-on local STOP KWS"]
-        StopKWS --> Safe
-        Voice --> Audio["Local Jackie wake + VAD + ASR"]
-        Audio --> Router["Local command router"]
+        Voice --> Audio["Jackie wake + VAD + ASR"]
+        Audio --> Router["Deterministic command router"]
         Keys["Keyboard / UI"] --> Router
+        StopKWS --> Stop["Local stop dispatcher"]
+        Router -->|"reserved STOP"| Stop
+        Router -->|"fixed controls"| Runtime["Contextual Runtime"]
         Router -->|"task / dialogue"| Context["Bounded context"]
-        Router -->|"fixed controls"| R["Runtime"]
-        Router -->|"reserved STOP"| Safe
-        K["Knowledge"] --> Context
-        W["World state"] --> Context
-        W --> R
+
+        Knowledge["Knowledge"] --> Context
+        State["Versioned world state"] --> Context
         Memory["Longship memory"] --> Context
-        Skills["Available Skills"] --> Context
+        Catalog["Available Skills"] --> Context
         Context --> Codex["Codex Brain"]
+        Sessions["Model Session Manager<br/>lifecycle + role bindings"] -. "brain binding" .-> Codex
         Codex --> Draft["TaskDraft: untrusted"]
         Draft --> Gate["Contract + revision gate"]
-        Gate --> M["Mission"]
-        M --> R["Runtime"]
-        R --> S["Selected Skills"]
-        S --> T["Robot or simulator"]
-        R --> Output["TTS / UI"]
-        T --> E["Experience"]
-        E --> Memory
+        Gate --> Mission["MissionContract"]
+        Mission --> Runtime
+        Runtime -. "safe-point handoff coordination" .-> Sessions
+
+        Runtime --> Skills["Scheduled semantic Skills"]
+        Skills -->|"policy-backed"| ModelRouter["Qualified model router"]
+        Sessions -. "policy binding" .-> ModelRouter
+        Skills -->|"deterministic motion"| Arbiter["Command arbiter<br/>live binding + lease epoch + TTL"]
+        ModelRouter -->|"after qualification"| Providers["Unitree official / Holosoma<br/>candidate seams; artifacts blocked"]
+        ModelRouter -. "reference only" .-> Groot["GR00T reference seam<br/>blocked; no executable provider"]
+        Providers --> Candidate["Typed PolicyCandidate"]
+        Candidate --> Guard["Policy guard<br/>lease + freshness + bounds"]
+        Guard --> Mapping["Pure target-qualified action mapping"]
+        Mapping --> Arbiter
+        Runtime -. "live lease authority" .-> Arbiter
+        Arbiter --> Safety["Independent safety"]
+        Stop --> Safety
+        Safety --> Adapter["Target adapter<br/>epoch + TTL recheck at transport"]
+        Adapter --> Target["Robot or simulator"]
+
+        Skills -->|"speech"| Output["TTS / captions / UI"]
+        Target --> State
+        State --> Runtime
+        Target --> Telemetry["Edge telemetry"]
+        Runtime --> Telemetry
+        Camera["Camera streams"] --> Observe["Live observability + replay"]
+        Telemetry --> Observe
+        Target --> Experience["ExperienceEpisode"]
+        Experience --> Memory
     end
 
-    subgraph Ecosystem["Ecosystem loop"]
-        C["Contracts"] --> P["Plugins"]
-        P --> B["Benchmarks"]
-        B --> G["Promotion gates"]
-        G --> Registry["Registry"]
+    subgraph Ecosystem["Ecosystem and artifact loop"]
+        Contracts["Contracts"] --> Plugins["Plugins"]
+        Plugins --> Benchmarks["Benchmarks"]
+        Benchmarks --> Promotion["Promotion gates"]
+        Promotion --> Registry["Registry"]
+        Plugins --> Manifests["Plugin + artifact manifests"]
+        Manifests --> Verify["Approval + hash verification"]
+        Verify --> Lock["Target-qualified immutable<br/>deployment lock"]
+        Promotion -. "qualification evidence" .-> Lock
     end
 
-    C --> Gate
-    P --> S
-    E --> B
-    Registry --> R
-    Safe -. veto .-> R
-    Safe -. stop .-> T
+    Contracts --> Gate
+    Experience --> Benchmarks
+    Registry --> Runtime
+    Lock -. "eligible bindings only" .-> Sessions
+    Safety -. "revoke leases / veto" .-> Runtime
 ```
 
 The **scene loop** shows the target architecture rather than claiming every
@@ -107,6 +131,13 @@ Codex is the reference high-level Brain, not the owner of robot state, memory,
 audio transport, or actuator authority. The **ecosystem loop** is designed to
 let people contribute compatible contracts, plugins, and benchmarks without
 coupling the project to one underlying model, simulator, or robot.
+Unitree and Holosoma are candidate-only policy seams with blocked artifacts;
+GR00T is reference-only. The policy seams are separate from the downstream
+target adapter, and none gains actuator authority without Runtime leases,
+guards, arbitration, and independent Safety. The Model Session Manager owns
+provider lifecycle and role bindings; Runtime coordinates safe-point handoff
+and remains the live lease authority. The target adapter rechecks command epoch
+and TTL immediately before a transport side effect.
 
 The long-term
 [Physical Intelligence Co-Evolution vision](docs/vision/physical-intelligence-coevolution.md)
