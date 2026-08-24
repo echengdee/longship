@@ -7,7 +7,12 @@
   "maturity": "experimental-not-hardware-qualified",
   "hardware_enabled_by_default": false,
   "actuator_scope": ["whole_body_motion"],
-  "exclusive_with": ["longship.locomotion.unitree-rl-lab"],
+  "exclusive_with": [
+    "longship.locomotion.unitree-rl-lab",
+    "longship.locomotion.unitree-rl-mjlab-g1-velocity-v0",
+    "longship.locomotion.holosoma-g1-29dof-loco",
+    "longship.policy.nvidia-isaac-groot-n1-7"
+  ],
   "upstream": {
     "project": "unitree_sdk2_python",
     "repository_url": "https://github.com/unitreerobotics/unitree_sdk2_python",

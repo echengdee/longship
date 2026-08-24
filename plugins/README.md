@@ -64,9 +64,18 @@ The first executable examples follow these boundaries:
   reserves a local Jackie KWS/VAD/ASR composition without bundling or activating
   model artifacts;
 - [`targets/unitree_g1`](targets/unitree_g1/) wraps a small, bounded portion of
-  the official high-level SDK behind a default-off hardware gate; and
+  the official high-level SDK behind a default-off hardware gate;
 - [`locomotion/unitree_rl_lab`](locomotion/unitree_rl_lab/) reserves an external
-  policy seam without copying or activating model weights.
+  policy seam without copying or activating model weights;
+- [`locomotion/unitree_rl_mjlab_g1_velocity`](locomotion/unitree_rl_mjlab_g1_velocity/)
+  implements a synthetic-testable 98-to-29 policy contract for the pinned
+  official G1 velocity-v0 ONNX, while license and target gates keep the real
+  artifact inactive;
+- [`policies/groot`](policies/groot/) records a pinned, reference-only GR00T
+  VLA boundary whose incomplete timing, gated dependency, and licensing block
+  an executable adapter; and
+- [`locomotion/holosoma`](locomotion/holosoma/) records a pinned framework and
+  candidate-checkpoint audit boundary without importing the training stack.
 
 A deployment may package capture, Jackie and reserved-STOP KWS, VAD, and ASR as
 one `voice_input` composition when those stages must share one microphone
@@ -87,6 +96,23 @@ A plugin references, but does not copy, its upstream repository. Production
 preflight resolves and verifies a reviewed artifact lock, checks license and
 resource requirements, warms the runtime, and confirms target qualification.
 Live missions never trigger a first-time model download.
+
+The current shared implementation lives in `longship.policies` and
+`longship.artifacts`. Policy backends receive an immutable request and may only
+return a candidate bound to the same call, model binding, observation version,
+lease ID and epoch, deadline, horizon, action space, and resource scope. A live
+lease callback is checked before and after inference; the future arbiter and
+target must repeat that fence before any side effect. The guard rejects stale,
+escalated, malformed, expired-frame, or out-of-bound candidates. The artifact
+store strictly validates manifest structure, uses immutable SHA-256 identities,
+and requires a separate trusted approval plus deployment-supplied mission-state
+and byte-transport boundaries. Longship intentionally ships no general network
+downloader in this experimental layer.
+
+`exclusive_with` is currently reviewable plugin metadata, not a claim that a
+general Runtime plugin loader already enforces it. All new whole-body policy
+plugins remain blocked until that loader, a live lease authority, and a
+qualified target composition consume the same ownership declarations.
 
 A `ModelSessionLock` binds exact provider and artifact revisions to roles.
 The Model Session Manager warms and shadows a candidate before a role-specific

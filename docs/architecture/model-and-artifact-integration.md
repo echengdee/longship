@@ -4,6 +4,33 @@
 > boundary. It does not vendor, mirror, download, or redistribute any upstream
 > source, checkpoint, dataset, container, credential, or private robot asset.
 
+## Implementation snapshot (2026-08-24)
+
+The repository now implements the smallest reusable part of this proposal:
+
+- `longship.policies` deep-freezes request payloads and defines untrusted action
+  candidates, deadline handling, live lease-epoch fencing, resource-scope
+  checks, action-shape checks, explicit bounds, freshness, and identity
+  correlation;
+- `longship.artifacts` strictly validates external artifact manifests, verifies
+  exact size and SHA-256 through no-follow file descriptors, and atomically
+  publishes approved bytes into a private content-addressed cache. Approval is
+  a separate trusted-registry input; byte transport and live mission state are
+  injected by the deployment layer, and no general network downloader ships in
+  this slice; and
+- the Unitree RL MJLab G1 velocity-v0 seam validates its exact 98-value input,
+  29-value output, 20 ms horizon, and whole-body lease using an injected runner
+  and synthetic tests.
+
+This is an integration contract, not deployed locomotion. The official Unitree
+and Holosoma artifacts remain blocked pending weight-license review and a
+simulator-only low-level target. Their side-effect-free observation/action
+seams can be tested with injected runners, while GR00T remains a pinned
+reference plugin because its public materials do not yet establish complete,
+reviewed artifact, timing, mapping, and target-qualification locks. No adapter
+here opens DDS, invokes a robot SDK, downloads during a mission, or commands
+joints.
+
 ## 1. The short answer
 
 Large models do not belong in the Longship Git repository.

@@ -182,6 +182,15 @@ See the [scenario instructions](scenarios/voice_tour/README.md) and the
 Unitree G1 wrapper is disabled by default and is not connected to this mock
 scenario; it establishes a bounded target seam for supervised future work.
 
+The repository also implements a provider-neutral policy request/candidate
+guard and a verified external-artifact cache. A pinned Unitree RL MJLab G1
+velocity policy contract exercises that seam with synthetic tests only.
+[GR00T](plugins/policies/groot/),
+[Holosoma](plugins/locomotion/holosoma/), and the
+[official Unitree MJLab policy](plugins/locomotion/unitree_rl_mjlab_g1_velocity/)
+remain default-off: no upstream repository or model weight is vendored, and
+unknown model licensing or missing target qualification blocks activation.
+
 ## Contracts First
 
 Longship will stabilize public protocols before expanding implementations.
@@ -271,6 +280,12 @@ Planned plugin types:
 
 Each plugin will declare its API version, compatible contracts, supported
 targets, maturity level, and artifact hashes in a machine-readable manifest.
+Action-producing providers return untrusted, lease-bound candidates through
+`longship.policies`; they never receive target or safety authority. External
+bytes are resolved through `longship.artifacts` only after strict manifest,
+license, independent approval, size, and digest checks. The deployment layer
+must inject its live mission-state authority and a separately qualified byte
+transport; this repository does not ship a general network downloader.
 
 ## Safety and Control Boundaries
 
@@ -319,6 +334,8 @@ license-compatible examples.
 External artifacts must have a content hash, provenance, license, compatible
 contract version, and stable URI recorded in an `ArtifactManifest`. Git LFS may
 be used for small examples, but it is not the primary model or dataset store.
+An artifact manifest cannot approve itself: deployment preflight also requires
+an independently trusted approval bound to the manifest's exact SHA-256.
 
 ## Capability Promotion
 

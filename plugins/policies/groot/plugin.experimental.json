@@ -1,0 +1,43 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.policy.nvidia-isaac-groot-n1-7",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "vla_policy",
+  "maturity": "reference-only-license-and-target-blocked",
+  "activation": "blocked",
+  "entry_point": null,
+  "hardware_enabled_by_default": false,
+  "actuator_scope": ["whole_body_motion"],
+  "exclusive_with": [
+    "longship.target.unitree-g1-high-level",
+    "longship.locomotion.unitree-rl-lab",
+    "longship.locomotion.unitree-rl-mjlab-g1-velocity-v0",
+    "longship.locomotion.holosoma-g1-29dof-loco"
+  ],
+  "upstream": {
+    "project": "Isaac-GR00T",
+    "repository_url": "https://github.com/NVIDIA/Isaac-GR00T",
+    "revision": "51d4c89f72fda44cbf77285c6a8114b52676b8a1",
+    "repository_code_license": "Apache-2.0",
+    "package_name": "gr00t",
+    "package_version": "0.1.0",
+    "python_requires": ">=3.12,<3.13"
+  },
+  "models": [
+    {
+      "model_id": "nvidia/GR00T-N1.7-3B",
+      "revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+      "gated_access": false,
+      "weight_license_id": "NOASSERTION"
+    },
+    {
+      "model_id": "nvidia/Cosmos-Reason2-2B",
+      "revision": "9ce19a195e423419c349abfc86fd07178b230561",
+      "gated_access": true,
+      "weight_license_id": "LicenseRef-NVIDIA-Open-Model-License"
+    }
+  ],
+  "interface_profile": "real_g1_relative_eef_relative_joints",
+  "artifact": null,
+  "block_reason": "The GR00T checkpoint has conflicting bundled license terms; the required Cosmos backbone is gated and lacks a reviewed complete artifact set; G1 frames, units, action timing, control mapping, and target qualification are incomplete"
+}
