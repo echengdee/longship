@@ -1,0 +1,77 @@
+{
+  "schema_version": "longship.model-artifact-manifest.v1",
+  "manifest_id": "longship.holosoma.g1.29dof.fastsac.fb835ec",
+  "model_id": "holosoma.g1.29dof.fastsac-locomotion",
+  "model_version": "fb835ec8cb6ee48f483ce567586625e5fae1ae1f",
+  "role": "locomotion_policy",
+  "upstream": {
+    "project_name": "holosoma",
+    "repository_url": "https://github.com/amazon-far/holosoma",
+    "revision": "fb835ec8cb6ee48f483ce567586625e5fae1ae1f",
+    "code_license_id": "Apache-2.0",
+    "weight_license_id": "NOASSERTION",
+    "redistribution": "unknown",
+    "terms_url": "https://github.com/amazon-far/holosoma/blob/fb835ec8cb6ee48f483ce567586625e5fae1ae1f/LICENSE"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "fastsac_g1_29dof.onnx",
+      "kind": "policy_checkpoint",
+      "uri": "https://raw.githubusercontent.com/amazon-far/holosoma/fb835ec8cb6ee48f483ce567586625e5fae1ae1f/src/holosoma_inference/holosoma_inference/models/loco/g1_29dof/fastsac_g1_29dof.onnx",
+      "sha256": "8346fd90778439395922a8c7256f24125ae84b8dea949128bac9e23c02bc7717",
+      "size_bytes": 895618,
+      "media_type": "application/onnx",
+      "required": true,
+      "gated_access": false,
+      "license_id": "NOASSERTION"
+    }
+  ],
+  "interface": {
+    "input_contracts": ["longship.policy-request.v1"],
+    "output_contracts": ["longship.policy-candidate.v1"],
+    "semantic_skill_ids": ["locomotion.velocity"],
+    "observation_profile_id": "holosoma.g1.29dof.loco.obs100.v1",
+    "action_space_id": "holosoma.g1.29dof.loco.raw-position-residual.v1"
+  },
+  "compatibility": {
+    "longship_api_range": ">=0.1.0a0,<0.2",
+    "target_ids": [],
+    "embodiment_tags": ["unitree.g1.29dof"],
+    "runtime_engines": ["onnxruntime"],
+    "platform_architectures": ["x86_64", "aarch64"]
+  },
+  "deployment": {
+    "execution_modes": ["in_process"],
+    "prefetch_required": true,
+    "allow_download_during_mission": false,
+    "container_image": null,
+    "cache_policy": {
+      "key": "sha256",
+      "eviction": "lru_unleased",
+      "rollback_retain_count": 2
+    },
+    "resources": {
+      "cpu_cores": 1,
+      "ram_bytes": 536870912,
+      "disk_bytes": 1048576,
+      "accelerators": [],
+      "vram_bytes": 0
+    },
+    "warmup_timeout_ms": 10000
+  },
+  "safety": {
+    "output_authority": "bounded_action_chunk",
+    "stale_after_ms": 20,
+    "max_action_horizon_ms": 20,
+    "requires_policy_guard": true,
+    "requires_target_qualification": true,
+    "fallback_policy": "hold_then_stop"
+  },
+  "provenance": {
+    "created_at": "2026-08-24T00:00:00+08:00",
+    "created_by": "Longship contributors",
+    "source_commit": "bb347a4da5f7c1e42198dc394bd2a4dfc94171d4",
+    "review_status": "draft",
+    "evaluation_result_refs": []
+  }
+}

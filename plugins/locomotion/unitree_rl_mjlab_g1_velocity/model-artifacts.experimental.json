@@ -1,0 +1,88 @@
+{
+  "schema_version": "longship.model-artifact-manifest.v1",
+  "manifest_id": "longship.unitree-rl-mjlab.g1.velocity-v0.1425b15",
+  "model_id": "unitree-rl-mjlab.g1.velocity-v0",
+  "model_version": "1425b15f73bd4095f0df53709d7c389c3eb9e790",
+  "role": "locomotion_policy",
+  "upstream": {
+    "project_name": "unitree_rl_mjlab",
+    "repository_url": "https://github.com/unitreerobotics/unitree_rl_mjlab",
+    "revision": "1425b15f73bd4095f0df53709d7c389c3eb9e790",
+    "code_license_id": "Apache-2.0",
+    "weight_license_id": "NOASSERTION",
+    "redistribution": "unknown",
+    "terms_url": "https://github.com/unitreerobotics/unitree_rl_mjlab/blob/1425b15f73bd4095f0df53709d7c389c3eb9e790/LICENCE"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "policy.onnx",
+      "kind": "policy_checkpoint",
+      "uri": "https://raw.githubusercontent.com/unitreerobotics/unitree_rl_mjlab/1425b15f73bd4095f0df53709d7c389c3eb9e790/deploy/robots/g1/config/policy/velocity/v0/exported/policy.onnx",
+      "sha256": "2a66ca6336eadb3c0b34b557763f3e06d01ff8fcf6260dd4cedbd69d6093fc28",
+      "size_bytes": 878421,
+      "media_type": "application/onnx",
+      "required": true,
+      "gated_access": false,
+      "license_id": "NOASSERTION"
+    },
+    {
+      "artifact_id": "deploy.yaml",
+      "kind": "configuration",
+      "uri": "https://raw.githubusercontent.com/unitreerobotics/unitree_rl_mjlab/1425b15f73bd4095f0df53709d7c389c3eb9e790/deploy/robots/g1/config/policy/velocity/v0/params/deploy.yaml",
+      "sha256": "01e1cf3f6ec44e9942494fbb4a9904df07201e14e5551a277f38d7c7d1bda28d",
+      "size_bytes": 2289,
+      "media_type": "application/yaml",
+      "required": true,
+      "gated_access": false,
+      "license_id": "NOASSERTION"
+    }
+  ],
+  "interface": {
+    "input_contracts": ["longship.policy-request.v1"],
+    "output_contracts": ["longship.policy-candidate.v1"],
+    "semantic_skill_ids": ["locomotion.velocity"],
+    "observation_profile_id": "unitree.g1.29dof.mjlab.velocity-v0.obs98",
+    "action_space_id": "unitree.g1.29dof.mjlab.velocity-v0.raw-joint-position-action"
+  },
+  "compatibility": {
+    "longship_api_range": ">=0.1.0a0,<0.2",
+    "target_ids": [],
+    "embodiment_tags": ["unitree.g1.29dof"],
+    "runtime_engines": ["onnxruntime"],
+    "platform_architectures": ["x86_64", "aarch64"]
+  },
+  "deployment": {
+    "execution_modes": ["in_process"],
+    "prefetch_required": true,
+    "allow_download_during_mission": false,
+    "container_image": null,
+    "cache_policy": {
+      "key": "sha256",
+      "eviction": "lru_unleased",
+      "rollback_retain_count": 2
+    },
+    "resources": {
+      "cpu_cores": 1,
+      "ram_bytes": 536870912,
+      "disk_bytes": 1048576,
+      "accelerators": [],
+      "vram_bytes": 0
+    },
+    "warmup_timeout_ms": 10000
+  },
+  "safety": {
+    "output_authority": "bounded_action_chunk",
+    "stale_after_ms": 20,
+    "max_action_horizon_ms": 20,
+    "requires_policy_guard": true,
+    "requires_target_qualification": true,
+    "fallback_policy": "hold_then_stop"
+  },
+  "provenance": {
+    "created_at": "2026-08-24T00:00:00+08:00",
+    "created_by": "Longship contributors",
+    "source_commit": "bb347a4da5f7c1e42198dc394bd2a4dfc94171d4",
+    "review_status": "draft",
+    "evaluation_result_refs": []
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.locomotion.holosoma-g1-29dof-loco",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "locomotion_policy",
+  "maturity": "contract-implemented-artifact-unreviewed",
+  "activation": "blocked",
+  "entry_point": "longship.policies.holosoma_g1:HolosomaG1LocomotionBackend",
+  "artifact_manifest": "model-artifacts.experimental.json",
+  "hardware_enabled_by_default": false,
+  "actuator_scope": ["whole_body_motion"],
+  "exclusive_with": [
+    "longship.target.unitree-g1-high-level",
+    "longship.locomotion.unitree-rl-lab",
+    "longship.locomotion.unitree-rl-mjlab-g1-velocity-v0",
+    "longship.policy.nvidia-isaac-groot-n1-7"
+  ],
+  "upstream": {
+    "project": "holosoma",
+    "repository_url": "https://github.com/amazon-far/holosoma",
+    "revision": "fb835ec8cb6ee48f483ce567586625e5fae1ae1f",
+    "repository_code_license": "Apache-2.0",
+    "inference_package_version": "0.1.1",
+    "artifact_license": "NOASSERTION"
+  },
+  "contract": {
+    "observation_profile_id": "holosoma.g1.29dof.loco.obs100.v1",
+    "action_space_id": "holosoma.g1.29dof.loco.raw-position-residual.v1",
+    "step_ms": 20,
+    "input_shape": [1, 100],
+    "output_shape": [1, 29],
+    "joint_mapping": "exact_name_order",
+    "base_angular_velocity_scale": 0.25,
+    "joint_velocity_scale": 0.05,
+    "target_position_residual_scale": 0.25
+  },
+  "block_reason": "No separately reviewed checkpoint license, compatible low-level target, simulator qualification, or hardware qualification"
+}
