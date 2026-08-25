@@ -8,7 +8,7 @@ The plugin owns one microphone stream and composes two local branches:
 ```text
 local PCM capture
   +-> always-on reserved-STOP keyword spotting -> safety-only event
-  +-> Jackie keyword spotting: Hey Jackie / Jackie / 你好杰基
+  +-> Jackie keyword spotting: Hey Jackie / Jackie / configured localized aliases
         -> VAD-delimited utterance
         -> local ASR transcript
         -> typed VoiceInputEvent stream

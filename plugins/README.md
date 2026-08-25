@@ -34,6 +34,17 @@ maturity: draft
 The manifest format is still a proposal. It will be versioned before plugins
 are accepted as compatible.
 
+## Core Capability Wrappers
+
+Some Longship-maintained, provider-independent capabilities are implemented in
+`src/longship` and exposed through a thin plugin wrapper. The Navigation
+Harness follows this pattern: its Mission, Map, Localization, Planning, and
+Local Trajectory engines live in `src/longship/navigation`, while
+`skills/navigation_harness` declares the `navigate_to` Skill and its Runtime
+boundary. The core RoutePlan-driven runtime may publish policy-native local
+trajectories through `LocalTrajectoryStream`; target-, transport-, safety-,
+control-, and vendor-specific execution remain separate adapters.
+
 ## Heavy Models, Frameworks, and Robot SDKs
 
 Plugins remain thin even when their upstream dependency is large. Keep

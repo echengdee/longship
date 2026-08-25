@@ -15,12 +15,14 @@ pip install -e .
 longship-tour scenarios/voice_tour/tour.zh-CN.json
 ```
 
-Try `开始导览`, `暂停`, `恢复`, `下一站`, `重复`, `状态`, `取消`, and
-`停止`. English aliases are also available. A microphone ASR plugin should
+Try `start`, `pause`, `resume`, `next`, `repeat`, `status`, `cancel`, and
+`stop`. The `zh-CN` scenario also accepts configured localized aliases. A
+microphone ASR plugin should
 send partial and final transcripts into the same interaction boundary; partial
 transcripts are accepted only by the reserved stop grammar.
 
-The mock tour waits for `下一站` after each narration. Travel announcements use
+The mock tour waits for `next` or its configured localized alias after each
+narration. Travel announcements use
 the speaker resource while navigation uses the base resource, so they may run
 at the same time. Exhibit narration waits for explicit mock arrival evidence.
 

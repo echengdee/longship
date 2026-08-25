@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:plugin:navigation-harness:navigate-to-result:v1",
+  "title": "NavigateToResult",
+  "description": "Draft terminal result for the navigation_harness navigate_to Skill.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "skill_call_id",
+    "navigation_mission_id",
+    "outcome",
+    "decided_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.navigation.navigate-to-result.v1"
+    },
+    "skill_call_id": {"$ref": "#/$defs/id"},
+    "navigation_mission_id": {"$ref": "#/$defs/id"},
+    "outcome": {"enum": ["succeeded", "failed", "cancelled"]},
+    "decided_at": {"$ref": "#/$defs/timePoint"},
+    "completion": {
+      "type": ["object", "null"],
+      "description": "Structured Navigation Mission completion evidence."
+    },
+    "failure": {
+      "type": ["object", "null"],
+      "description": "Structured Navigation Mission failure evidence."
+    },
+    "cancellation_reason": {"type": ["string", "null"], "minLength": 1}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"outcome": {"const": "succeeded"}}},
+      "then": {
+        "required": ["completion"],
+        "properties": {
+          "completion": {"type": "object"},
+          "failure": {"type": "null"},
+          "cancellation_reason": {"type": "null"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"outcome": {"const": "failed"}}},
+      "then": {
+        "required": ["failure"],
+        "properties": {
+          "completion": {"type": "null"},
+          "failure": {"type": "object"},
+          "cancellation_reason": {"type": "null"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"outcome": {"const": "cancelled"}}},
+      "then": {
+        "properties": {
+          "completion": {"type": "null"},
+          "failure": {"type": "null"}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "timePoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clock_id", "nanoseconds"],
+      "properties": {
+        "clock_id": {"$ref": "#/$defs/id"},
+        "nanoseconds": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

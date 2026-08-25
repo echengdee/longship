@@ -1,6 +1,10 @@
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
+.local/
+.vscode/
+artifacts/
 build/
 dist/
 *.egg-info/

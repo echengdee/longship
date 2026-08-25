@@ -1,0 +1,20 @@
+plugin_id: longship.policy.visual_navigation.nomad
+plugin_version: 0.1.0
+api_version: 0.1.0
+kind: policy
+
+implementation:
+  package: nomad_runtime
+  language: python
+  framework: pytorch
+
+contracts: {}
+exports: {}
+supported_targets: []
+
+artifacts:
+  checkpoint:
+    bundled: true
+    required_at_load: true
+
+maturity: draft
