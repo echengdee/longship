@@ -158,6 +158,11 @@ defines where semantic Skills, navigation providers, target adapters, Runtime,
 and Safety belong. In short, Runtime schedules capabilities; it does not absorb
 their algorithms.
 
+The [RL platform architecture](docs/architecture/rl-platform.md) defines the
+separate experiment-to-training-to-Sim2Sim-to-deployment lifecycle. It uses
+typed registered model parts and complete per-experiment YAML recipes without
+turning configuration into a general computation-graph language.
+
 ## Run the Experimental Voice Tour
 
 The first executable vertical slice uses console input as an ASR boundary,

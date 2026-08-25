@@ -1,0 +1,66 @@
+x-default-isaac-lab-template-environment: &default-isaac-lab-template-environment
+  - OMNI_KIT_ALLOW_ROOT=1
+
+x-default-isaac-lab-template-deploy: &default-isaac-lab-template-deploy
+  resources:
+    reservations:
+      devices:
+        - driver: nvidia
+          count: all
+          capabilities: [ gpu ]
+
+services:
+  instinctlab:
+    env_file: .env.base
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        - ISAACLAB_BASE_IMAGE_ARG=${ISAACLAB_BASE_IMAGE}
+        - DOCKER_ISAACLAB_EXTENSION_TEMPLATE_PATH_ARG=${DOCKER_ISAACLAB_EXTENSION_TEMPLATE_PATH}
+    image: instinctlab
+    container_name: instinctlab
+    volumes:
+      - type: bind
+        source: ../
+        target: ${DOCKER_ISAACLAB_EXTENSION_TEMPLATE_PATH}
+    network_mode: host
+    environment: *default-isaac-lab-template-environment
+    deploy: *default-isaac-lab-template-deploy
+    # This is the entrypoint for the container
+    entrypoint: bash
+    stdin_open: true
+    tty: true
+  ziwenz-instinctlab:
+    env_file: .env.base
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        - ISAACLAB_BASE_IMAGE_ARG=${ISAACLAB_BASE_IMAGE}
+        - DOCKER_ISAACLAB_EXTENSION_TEMPLATE_PATH_ARG=${DOCKER_ISAACLAB_EXTENSION_TEMPLATE_PATH}
+    image: ziwenz-instinctlab
+    container_name: ziwenz-instinctlab
+    volumes:
+      - type: bind
+        source: ../../
+        target: /root/ziwenz
+      - type: bind
+        source: /public/MARS/Users/zzw/Data
+        target: /root/Data
+      - type: bind
+        source: /public/MARS/Users/zzw/Data
+        target: /home/zzw/Data
+      - type: bind
+        source: /public/MARS/Users/zzw/Datasets
+        target: /root/Datasets
+      - type: bind
+        source: /public/MARS/Users/zzw/Datasets
+        target: /home/zzw/Datasets
+    network_mode: host
+    environment: *default-isaac-lab-template-environment
+    deploy: *default-isaac-lab-template-deploy
+    # This is the entrypoint for the container
+    entrypoint: bash
+    stdin_open: true
+    tty: true

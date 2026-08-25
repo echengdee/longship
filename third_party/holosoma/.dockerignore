@@ -1,0 +1,57 @@
+Config
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+.coverage
+.mypy_cache
+.ruff_cache
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Documentation
+*.md
+docs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Model checkpoints and large files
+*.ckpt
+*.pth
+*.pt
+wandb/
+
+# etc
+.claude/
+.jj/
+.omc/
+mise.local.toml
