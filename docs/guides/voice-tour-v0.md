@@ -19,7 +19,7 @@ flowchart LR
     ASR --> Session["Wake/dictation session"]
     Session --> Gateway["Interaction router"]
     Keys["Keyboard"] --> Gateway
-    Gateway -->|"reserved stop aliases, including partial ASR"| Stop
+    Gateway -->|"stop / 停止, including partial ASR"| Stop
     Gateway -->|"start, pause, resume, next, status"| FSM["Deterministic tour FSM"]
     Gateway -->|"unrecognised final text"| Context["Bounded V0 context<br/>tour state + allowed actions"]
     Context --> Brain["Optional Codex Brain"]
