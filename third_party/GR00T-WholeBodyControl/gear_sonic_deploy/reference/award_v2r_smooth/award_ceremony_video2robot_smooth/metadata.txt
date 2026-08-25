@@ -1,0 +1,12 @@
+Metadata for: award_ceremony_video2robot_smooth
+==============================
+
+Total timesteps: 180
+
+Data arrays summary:
+  joint_pos: (180, 29) (float32)
+  joint_vel: (180, 29) (float32)
+  body_pos: (180, 14, 3) (float32)
+  body_quat: (180, 14, 4) (float32)
+  body_lin_vel: (180, 14, 3) (float32)
+  body_ang_vel: (180, 14, 3) (float32)

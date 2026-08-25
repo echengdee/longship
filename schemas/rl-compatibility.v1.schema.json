@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://longship.dev/schemas/rl-compatibility.v1.schema.json",
+  "title": "Longship RL Compatibility Lock v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "platform_version", "runtime", "sources", "contracts", "backends"],
+  "properties": {
+    "schema_version": {"const": "longship.rl-compatibility.v1"},
+    "platform_version": {"type": "string", "minLength": 1},
+    "runtime": {"type": "object", "minProperties": 1},
+    "sources": {"type": "object", "minProperties": 1},
+    "contracts": {"type": "object", "minProperties": 1},
+    "backends": {"type": "object", "minProperties": 1}
+  }
+}

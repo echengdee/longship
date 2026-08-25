@@ -13,6 +13,7 @@ MUJOCO_LOG.TXT
 longship_mujoco_eval/
 .runtime/
 outputs/
+.runtime/
 
 # Third-party source snapshots are versioned; generated and heavyweight
 # artifacts remain local and are resolved separately.

@@ -1,0 +1,129 @@
+# Longship generated stage23/model_1700 standing pose.
+# Joint order is MuJoCo / Unitree G1 29-DOF order.
+generated_at: "2026-07-06 17:12:39"
+source_checkpoint: "/home/qcraft/unitree/unitree_rl_lab/logs/rsl_rl/unitree_g1_29dof_running_deploy_rl/2026-06-12_23-57-28_anchor_stage23_from22_1500_x3p4_5p0_heading_guard_lr25e9_0612/model_1700.pt"
+model_xml: "/home/qcraft/unitree/unitree_rl_mjlab/src/assets/robots/unitree_g1/xmls/scene_g1.xml"
+duration_s: 8.000
+sample_start_s: 3.000
+sample_count: 2500
+lower_body_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+joint_order:
+  - left_hip_pitch_joint
+  - left_hip_roll_joint
+  - left_hip_yaw_joint
+  - left_knee_joint
+  - left_ankle_pitch_joint
+  - left_ankle_roll_joint
+  - right_hip_pitch_joint
+  - right_hip_roll_joint
+  - right_hip_yaw_joint
+  - right_knee_joint
+  - right_ankle_pitch_joint
+  - right_ankle_roll_joint
+  - waist_yaw_joint
+  - waist_roll_joint
+  - waist_pitch_joint
+  - left_shoulder_pitch_joint
+  - left_shoulder_roll_joint
+  - left_shoulder_yaw_joint
+  - left_elbow_joint
+  - left_wrist_roll_joint
+  - left_wrist_pitch_joint
+  - left_wrist_yaw_joint
+  - right_shoulder_pitch_joint
+  - right_shoulder_roll_joint
+  - right_shoulder_yaw_joint
+  - right_elbow_joint
+  - right_wrist_roll_joint
+  - right_wrist_pitch_joint
+  - right_wrist_yaw_joint
+q_mujoco_order:
+  - -0.136089448  # left_hip_pitch_joint
+  - -0.007990774  # left_hip_roll_joint
+  - 0.012218388  # left_hip_yaw_joint
+  - 0.282749737  # left_knee_joint
+  - -0.164737643  # left_ankle_pitch_joint
+  - 0.005382167  # left_ankle_roll_joint
+  - -0.128899470  # right_hip_pitch_joint
+  - 0.015063731  # right_hip_roll_joint
+  - 0.032335667  # right_hip_yaw_joint
+  - 0.288939655  # right_knee_joint
+  - -0.177327879  # right_ankle_pitch_joint
+  - -0.002457094  # right_ankle_roll_joint
+  - -0.013470759  # waist_yaw_joint
+  - -0.003519845  # waist_roll_joint
+  - 0.002550134  # waist_pitch_joint
+  - 0.355660879  # left_shoulder_pitch_joint
+  - 0.218342609  # left_shoulder_roll_joint
+  - -0.009318346  # left_shoulder_yaw_joint
+  - 0.891991643  # left_elbow_joint
+  - 0.009169784  # left_wrist_roll_joint
+  - 0.012584221  # left_wrist_pitch_joint
+  - 0.015852558  # left_wrist_yaw_joint
+  - 0.340103820  # right_shoulder_pitch_joint
+  - -0.207352157  # right_shoulder_roll_joint
+  - -0.015631693  # right_shoulder_yaw_joint
+  - 0.882463759  # right_elbow_joint
+  - 0.013034835  # right_wrist_roll_joint
+  - 0.026750859  # right_wrist_pitch_joint
+  - -0.002567636  # right_wrist_yaw_joint
+q_mean_mujoco_order:
+  - -0.136062389  # left_hip_pitch_joint
+  - -0.008114425  # left_hip_roll_joint
+  - 0.012932037  # left_hip_yaw_joint
+  - 0.282940914  # left_knee_joint
+  - -0.165143451  # left_ankle_pitch_joint
+  - 0.005644695  # left_ankle_roll_joint
+  - -0.128793460  # right_hip_pitch_joint
+  - 0.015276760  # right_hip_roll_joint
+  - 0.032071631  # right_hip_yaw_joint
+  - 0.288959141  # right_knee_joint
+  - -0.177616605  # right_ankle_pitch_joint
+  - -0.002591597  # right_ankle_roll_joint
+  - -0.013235088  # waist_yaw_joint
+  - -0.003469062  # waist_roll_joint
+  - 0.002836353  # waist_pitch_joint
+  - 0.355806333  # left_shoulder_pitch_joint
+  - 0.218206356  # left_shoulder_roll_joint
+  - -0.009345812  # left_shoulder_yaw_joint
+  - 0.891951203  # left_elbow_joint
+  - 0.009189021  # left_wrist_roll_joint
+  - 0.012588691  # left_wrist_pitch_joint
+  - 0.016043934  # left_wrist_yaw_joint
+  - 0.339879254  # right_shoulder_pitch_joint
+  - -0.207426605  # right_shoulder_roll_joint
+  - -0.015759575  # right_shoulder_yaw_joint
+  - 0.882365566  # right_elbow_joint
+  - 0.013028679  # right_wrist_roll_joint
+  - 0.026785622  # right_wrist_pitch_joint
+  - -0.002391317  # right_wrist_yaw_joint
+q_std_mujoco_order:
+  - 0.001359680  # left_hip_pitch_joint
+  - 0.005249076  # left_hip_roll_joint
+  - 0.005320449  # left_hip_yaw_joint
+  - 0.000537377  # left_knee_joint
+  - 0.001424157  # left_ankle_pitch_joint
+  - 0.005315452  # left_ankle_roll_joint
+  - 0.000452807  # right_hip_pitch_joint
+  - 0.005345469  # right_hip_roll_joint
+  - 0.001965138  # right_hip_yaw_joint
+  - 0.001274075  # right_knee_joint
+  - 0.001276398  # right_ankle_pitch_joint
+  - 0.004403658  # right_ankle_roll_joint
+  - 0.002520651  # waist_yaw_joint
+  - 0.000221952  # waist_roll_joint
+  - 0.001708463  # waist_pitch_joint
+  - 0.001007789  # left_shoulder_pitch_joint
+  - 0.001378067  # left_shoulder_roll_joint
+  - 0.000523233  # left_shoulder_yaw_joint
+  - 0.000951951  # left_elbow_joint
+  - 0.000267313  # left_wrist_roll_joint
+  - 0.000914679  # left_wrist_pitch_joint
+  - 0.000458343  # left_wrist_yaw_joint
+  - 0.002837831  # right_shoulder_pitch_joint
+  - 0.000463109  # right_shoulder_roll_joint
+  - 0.000655614  # right_shoulder_yaw_joint
+  - 0.000934383  # right_elbow_joint
+  - 0.001051262  # right_wrist_roll_joint
+  - 0.001116782  # right_wrist_pitch_joint
+  - 0.001614810  # right_wrist_yaw_joint

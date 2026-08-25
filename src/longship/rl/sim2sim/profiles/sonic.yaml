@@ -1,0 +1,37 @@
+schema_version: longship.sim2sim-control.v1
+backend: sonic
+robot: unitree_g1_29dof
+
+dds:
+  type: unitree_sdk2_dds
+  interface: lo
+  domain_id: 0
+  lowstate_topic: rt/lowstate
+  lowcmd_topic: rt/lowcmd
+  state_frequency_hz: 500
+  control_frequency_hz: 50
+  command_frequency_hz: 200
+
+simulator:
+  gantry_enabled: true
+  gantry_length_m: 1.0
+  depth_enabled: false
+
+initialization:
+  duration_s: 1.0
+  source: python_pipeline
+  artifact: src/longship/rl/sim2sim/sonic_pipeline.py
+
+policy:
+  parameters:
+    source: python_pipeline
+    artifact: src/longship/rl/sim2sim/sonic_pipeline.py
+  runtime: onnxruntime
+  provider: auto
+  decoder: third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/model_decoder.onnx
+  encoder: third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/model_encoder.onnx
+  observation_config: third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/observation_config.yaml
+  planner: third_party/GR00T-WholeBodyControl/gear_sonic_deploy/planner/target_vel/V2/planner_sonic.onnx
+  reference: third_party/GR00T-WholeBodyControl/gear_sonic_deploy/reference/award_v2r_smooth
+  lower_body_stance: third_party/GR00T-WholeBodyControl/gear_sonic_deploy/config/longship/stage23_1700_stand.yaml
+  note: SONIC planner, encoder and decoder share Longship's Python ONNX Runtime engine.
