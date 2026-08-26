@@ -26,6 +26,7 @@ Current scope:
 - adapt a published NoMaD topomap to the Longship Map Engine;
 - adapt distance inference to fixed-start Localization;
 - adapt raw trajectory inference to the optional executor-side trajectory Port;
+- consume an external ROS 2 RGB topic through a long-lived Navigation Mode;
 - render raw candidates and a diagnostic stitched path over an offline
   recorded-video replay.
 
@@ -34,8 +35,52 @@ Deferred scope:
 - production camera drivers and image decoding;
 - arbitrary-start global localization;
 - waypoint selection, scaling, and control;
-- ROS or robot SDK integration;
+- RGBD depth consumption, ROS command output, or robot SDK integration;
 - safety and command arbitration.
+
+## ROS 2 Navigation Mode
+
+`longship_adapter.NomadRos2NavigationModeDriverFactory` adapts a ROS 2
+`sensor_msgs/Image` color topic into Longship's long-lived Navigation Mode. It
+uses the RGB half of an external RGBD camera; depth is deliberately not passed
+to NoMaD and remains available to future safety or geometry modules.
+
+The application creates and enters the mode once, then starts target-specific
+operations without reopening the ROS 2 subscription, reloading the model, or
+resetting fixed-start localization:
+
+```python
+from pathlib import Path
+
+from longship.navigation import NavigationModeRuntimeFactory
+from longship_adapter import (
+    NomadRos2NavigationModeConfig,
+    NomadRos2NavigationModeDriverFactory,
+)
+
+driver_factory = NomadRos2NavigationModeDriverFactory(
+    NomadRos2NavigationModeConfig(
+        checkpoint_path=Path("models/nomad/nomad.pth"),
+        topomap_root=Path("/data/topomap"),
+        color_topic="/camera/camera/color/image_raw",
+    )
+)
+runtime = NavigationModeRuntimeFactory(driver_factory).create_runtime()
+
+await runtime.enter()
+operation = await runtime.start_navigation(request, authority)
+publication = runtime.trajectory_stream.get_latest()
+```
+
+For this initial topological driver, `request.map_id` and `request.map_version`
+must match the mode configuration, and `request.waypoint_id` is the target
+topomap node ID (for example, `node-0012`). `request.route_id` remains an
+outer correlation ID; the driver computes the actual route after localization.
+
+The mode stream remains stable across goals. Before a usable target trajectory
+exists it publishes `INITIALIZING` or `HOLDING`; only `ACTIVE` publications
+contain a complete, short-lived NoMaD trajectory. `await runtime.exit()` stops
+the active route, ROS 2 source, localization runtime, and model executor.
 
 ## Offline trajectory visualization
 
