@@ -9,6 +9,10 @@ description = "Contracts-first, plugin-driven runtime experiments for open robot
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
+dependencies = [
+    "PyYAML>=6.0,<7",
+    "pyzmq>=26,<28",
+]
 
 [project.optional-dependencies]
 codex = ["openai-codex>=0.144.4,<0.145"]
@@ -20,6 +24,11 @@ mujoco-g1 = [
     "torch>=2",
 ]
 test = ["pytest>=8.0"]
+rl-test = [
+    "numpy>=1.26,<3",
+    "mujoco>=3.1,<4",
+    "onnxruntime>=1.18,<2",
+]
 unitree-mjlab = ["numpy>=1.26,<3", "onnxruntime>=1.18,<2"]
 
 [project.scripts]

@@ -1,0 +1,17 @@
+Motion Information: award_ceremony_video2robot_smooth
+==================================================
+
+dof:
+  Shape: (180, 29)
+  Dtype: float32
+  Range: [-1.950, 1.950]
+
+root_trans_offset:
+  Shape: (180, 3)
+  Dtype: float32
+  Range: [-0.356, 0.936]
+
+root_rot:
+  Shape: (180, 4)
+  Dtype: float32
+  Range: [-0.981, 0.365]

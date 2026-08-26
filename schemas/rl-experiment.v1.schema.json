@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://longship.dev/schemas/rl-experiment.v1.schema.json",
+  "title": "Longship RL Experiment v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name", "model", "training", "environment"],
+  "properties": {
+    "schema_version": {"const": "longship.rl-experiment.v1"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 128},
+    "description": {"type": "string", "maxLength": 2000},
+    "seed": {"type": "integer", "minimum": 0},
+    "tags": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "model": {"$ref": "#/$defs/typedComponent"},
+    "training": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["backend", "trainer"],
+      "properties": {
+        "backend": {"$ref": "#/$defs/typedComponent"},
+        "trainer": {"$ref": "#/$defs/typedComponent"},
+        "runtime": {"type": "object"}
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["robot", "task"],
+      "properties": {
+        "robot": {"type": "string", "minLength": 1},
+        "task": {"type": "string", "minLength": 1}
+      }
+    },
+    "data": {"type": "object"}
+  },
+  "$defs": {
+    "typedComponent": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    }
+  }
+}

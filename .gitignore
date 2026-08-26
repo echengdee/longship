@@ -12,3 +12,18 @@ dist/
 MUJOCO_LOG.TXT
 longship_mujoco_eval/
 .runtime/
+outputs/
+.runtime/
+
+# Third-party source snapshots are versioned; generated and heavyweight
+# artifacts remain local and are resolved separately.
+third_party/**/*.mp4
+third_party/**/*.gif
+third_party/**/*.onnx
+third_party/**/*.pt
+third_party/**/*.pth
+third_party/**/*.ckpt
+third_party/**/*.npz
+third_party/**/*.o
+third_party/**/*.so
+third_party/**/*.a

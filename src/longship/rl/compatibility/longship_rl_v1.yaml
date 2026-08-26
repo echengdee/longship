@@ -1,0 +1,114 @@
+schema_version: longship.rl-compatibility.v1
+platform_version: 1.0.0
+
+runtime:
+  os: linux-x86_64
+  python: "3.11"
+  numpy: "1.26.4"
+  torch: "2.5.1+cu121"
+  cuda: "12.1"
+  isaac_sim: "5.1.0.0"
+  isaac_lab: "2.3.2"
+  isaac_lab_revision: "f73c331738"
+  mujoco: "3.4.0"
+  onnxruntime: "1.23.2"
+
+sources:
+  holosoma:
+    repository: https://github.com/amazon-far/holosoma
+    path: third_party/holosoma
+    longship_tree: 288390e74b60406837dec90619d41b8d931482e8
+  instinctlab:
+    repository: https://github.com/project-instinct/InstinctLab
+    path: third_party/InstinctLab
+    longship_tree: efdc486451ab3059eb1332b44af7c4e9f9b352c2
+  sonic:
+    repository: https://github.com/NVlabs/GR00T-WholeBodyControl
+    path: third_party/GR00T-WholeBodyControl
+    upstream_revision: a0732b642c0333077e127a2f56ab0014c196bca4
+    longship_tree: 3a7f6f3602df7f64d2ef2aa3e0f2b55c93dcf1d7
+
+contracts:
+  embodiment: unitree_g1_29dof
+  action_dimension: 29
+  control_frequency_hz: 50
+  quaternion_order: wxyz
+  position_unit: radian
+  velocity_unit: radian_per_second
+  sim2sim_transport:
+    type: unitree_sdk2_dds
+    domain_id: 0
+    interface: lo
+    lowstate_topic: rt/lowstate
+    lowcmd_topic: rt/lowcmd
+    state_frequency_hz: 500
+    command_frequency_hz: 200
+
+backends:
+  holosoma:
+    simulator: longship_mujoco
+    task: g1_29dof_locomotion
+    artifact: third_party/holosoma/src/holosoma_inference/holosoma_inference/models/loco/g1_29dof/fastsac_g1_29dof.onnx
+    artifact_sha256:
+      third_party/holosoma/src/holosoma_inference/holosoma_inference/models/loco/g1_29dof/fastsac_g1_29dof.onnx: 8346fd90778439395922a8c7256f24125ae84b8dea949128bac9e23c02bc7717
+    required_assets:
+      - third_party/holosoma/src/holosoma/holosoma/data/robots/g1/scenes/scene_g1_29dof_wbt_plane.xml
+      - src/longship/rl/sim2sim/simulator.py
+      - src/longship/rl/sim2sim/teleop.py
+      - src/longship/rl/sim2sim/adapters/holosoma_dds.py
+    required_capabilities:
+      - network_interface_enumeration
+      - cyclonedds_udp
+    status: candidate
+  sonic:
+    simulator: longship_mujoco
+    task: g1_whole_body_control
+    artifact: third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/model_decoder.onnx
+    required_artifacts:
+      - third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/model_encoder.onnx
+      - third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/model_decoder.onnx
+      - third_party/GR00T-WholeBodyControl/gear_sonic_deploy/planner/target_vel/V2/planner_sonic.onnx
+    artifact_sha256:
+      third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/model_encoder.onnx: 60be43157f57d812f38bdbb740a5de5d5d070e8840d9edc16f02a91a6d06255b
+      third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/model_decoder.onnx: c4ac2e74045e7cbfb568f15e6bf47ea7ce023df7a94322af50be223e0a628bab
+      third_party/GR00T-WholeBodyControl/gear_sonic_deploy/planner/target_vel/V2/planner_sonic.onnx: 39b553e197f62f077975ba38512bc04781a3fc37c2af7c6756e04629f760edea
+    required_assets:
+      - third_party/holosoma/src/holosoma/holosoma/data/robots/g1/scenes/scene_g1_29dof_wbt_plane.xml
+      - src/longship/rl/sim2sim/simulator.py
+      - src/longship/rl/sim2sim/teleop.py
+      - src/longship/rl/runtime/onnx.py
+      - src/longship/rl/sim2sim/sonic_pipeline.py
+      - src/longship/rl/sim2sim/adapters/sonic_onnx.py
+      - third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/observation_config.yaml
+      - third_party/GR00T-WholeBodyControl/gear_sonic_deploy/config/longship/stage23_1700_stand.yaml
+    required_capabilities:
+      - network_interface_enumeration
+      - cyclonedds_udp
+    status: candidate
+  instinctlab:
+    simulator: longship_mujoco
+    task: hiking_in_the_wild_g1_parkour
+    artifact: third_party/InstinctLab/models/hiking_in_the_wild/parkour_onboard_preview_stair/exported/actor.onnx
+    required_artifacts:
+      - third_party/InstinctLab/models/hiking_in_the_wild/parkour_onboard_preview_stair/exported/0-depth_encoder.onnx
+      - third_party/InstinctLab/models/hiking_in_the_wild/parkour_onboard_preview_stair/exported/actor.onnx
+      - third_party/InstinctLab/models/hiking_in_the_wild/stand_onboard/exported/0-depth_encoder.onnx
+      - third_party/InstinctLab/models/hiking_in_the_wild/stand_onboard/exported/actor.onnx
+    artifact_sha256:
+      third_party/InstinctLab/models/hiking_in_the_wild/parkour_onboard_preview_stair/exported/0-depth_encoder.onnx: 6da9f70e7f1cb3b37f02cac73fa16f6698afd427d9e44d833d345277a33b5b69
+      third_party/InstinctLab/models/hiking_in_the_wild/parkour_onboard_preview_stair/exported/actor.onnx: 81b1af17d36ac1191e2654c35fb902d89c1efd96eea612c0a27d77c1edb5b61a
+      third_party/InstinctLab/models/hiking_in_the_wild/stand_onboard/exported/0-depth_encoder.onnx: d0ff357afe47065d9c64e5f465e51ac704a5dccd729890b1eb49fc10887c01d2
+      third_party/InstinctLab/models/hiking_in_the_wild/stand_onboard/exported/actor.onnx: 270b1333583acbd8d8009b162d09c17db29dfa7fc8fc91bae9aa076ca5c9f14d
+    required_assets:
+      - third_party/InstinctLab/models/hiking_in_the_wild/parkour_onboard_preview_stair/params/env.yaml
+      - third_party/holosoma/src/holosoma/holosoma/data/robots/g1/scenes/scene_g1_29dof_wbt_plane.xml
+      - src/longship/rl/sim2sim/simulator.py
+      - src/longship/rl/sim2sim/teleop.py
+      - src/longship/rl/sim2sim/adapters/instinctlab_dds.py
+    required_capabilities:
+      - network_interface_enumeration
+      - cyclonedds_udp
+      - mujoco_offscreen_depth
+    dds_depth_topic: rt/camera/depth
+    model_source: https://drive.google.com/drive/folders/1DZPOviSAfiDgeA0ti1XZqGvS2oCmIEKU
+    status: candidate
