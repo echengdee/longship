@@ -1,0 +1,99 @@
+{
+  "schema_version": "longship.model-artifact-manifest.v1",
+  "manifest_id": "longship.unitree-rl-gym.g1-12dof.official-276801e",
+  "model_id": "unitree-rl-gym.g1-12dof",
+  "model_version": "unitree-rl-gym-276801e46c5d433564f24658bac64f254b7d2d4b",
+  "role": "locomotion_policy",
+  "upstream": {
+    "project_name": "Unitree RL Gym",
+    "repository_url": "https://github.com/unitreerobotics/unitree_rl_gym",
+    "revision": "276801e46c5d433564f24658bac64f254b7d2d4b",
+    "code_license_id": "BSD-3-Clause",
+    "weight_license_id": "NOASSERTION",
+    "redistribution": "reference_only",
+    "terms_url": "https://raw.githubusercontent.com/unitreerobotics/unitree_rl_gym/276801e46c5d433564f24658bac64f254b7d2d4b/LICENSE"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "motion.pt",
+      "kind": "policy_checkpoint",
+      "uri": "https://raw.githubusercontent.com/unitreerobotics/unitree_rl_gym/276801e46c5d433564f24658bac64f254b7d2d4b/deploy/pre_train/g1/motion.pt",
+      "sha256": "cf668f75b90d1abf73d2b87612a6e76bccc61ff7e083b63582d3f6aaa3c1759d",
+      "size_bytes": 145745,
+      "media_type": "application/vnd.pytorch.torchscript",
+      "required": true,
+      "gated_access": true,
+      "license_id": "NOASSERTION"
+    },
+    {
+      "artifact_id": "g1.yaml",
+      "kind": "configuration",
+      "uri": "https://raw.githubusercontent.com/unitreerobotics/unitree_rl_gym/276801e46c5d433564f24658bac64f254b7d2d4b/deploy/deploy_mujoco/configs/g1.yaml",
+      "sha256": "73044e7d355c61915695c16d6e09eb3efef46eec1e3d708fd3eb9157dfe3bbbb",
+      "size_bytes": 737,
+      "media_type": "application/yaml",
+      "required": true,
+      "gated_access": true,
+      "license_id": "BSD-3-Clause"
+    },
+    {
+      "artifact_id": "LICENSE",
+      "kind": "other",
+      "uri": "https://raw.githubusercontent.com/unitreerobotics/unitree_rl_gym/276801e46c5d433564f24658bac64f254b7d2d4b/LICENSE",
+      "sha256": "aef6394ba1597725a68308167324e675f562e6606027404deb1b9da254c2b9c1",
+      "size_bytes": 1561,
+      "media_type": "text/plain",
+      "required": true,
+      "gated_access": true,
+      "license_id": "BSD-3-Clause"
+    }
+  ],
+  "interface": {
+    "input_contracts": ["longship.policy-request.v1"],
+    "output_contracts": ["longship.policy-candidate.v1"],
+    "semantic_skill_ids": ["navigation.follow_person"],
+    "observation_profile_id": "unitree.g1.12dof.rl-gym.obs47.v0",
+    "action_space_id": "unitree.g1.12dof.rl-gym.raw-position-residual.v0"
+  },
+  "compatibility": {
+    "longship_api_range": ">=0.1.0a0,<0.2",
+    "target_ids": ["longship.target.mujoco-g1-external-policy"],
+    "embodiment_tags": ["unitree.g1.12dof"],
+    "runtime_engines": ["torchscript-cpu"],
+    "platform_architectures": ["x86_64", "aarch64"]
+  },
+  "deployment": {
+    "execution_modes": ["in_process"],
+    "prefetch_required": true,
+    "allow_download_during_mission": false,
+    "container_image": null,
+    "cache_policy": {
+      "key": "sha256",
+      "eviction": "manual",
+      "rollback_retain_count": 2
+    },
+    "resources": {
+      "cpu_cores": 1,
+      "ram_bytes": 536870912,
+      "disk_bytes": 2097152,
+      "accelerators": [],
+      "vram_bytes": 0
+    },
+    "warmup_timeout_ms": 10000
+  },
+  "safety": {
+    "output_authority": "bounded_action_chunk",
+    "stale_after_ms": 20,
+    "max_action_horizon_ms": 20,
+    "requires_policy_guard": true,
+    "requires_target_qualification": true,
+    "fallback_policy": "hold_then_stop"
+  },
+  "provenance": {
+    "created_at": "2026-08-26T10:30:00+08:00",
+    "created_by": "Longship contributors",
+    "source_commit": "45071ba086b3cb43d0c58bb56e2927fd9d1e232b",
+    "review_status": "draft",
+    "evaluation_result_refs": []
+  }
+}

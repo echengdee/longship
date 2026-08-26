@@ -4,8 +4,11 @@ __pycache__/
 .venv/
 .local/
 .vscode/
-artifacts/
+/artifacts/
 build/
 dist/
 *.egg-info/
 .longship/
+MUJOCO_LOG.TXT
+longship_mujoco_eval/
+.runtime/

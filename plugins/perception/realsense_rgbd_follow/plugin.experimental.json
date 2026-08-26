@@ -1,0 +1,25 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.perception.realsense-rgbd-follow",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "perception",
+  "entry_point": "plugins/perception/realsense_rgbd_follow/worker.py",
+  "maturity": "experimental-gantry-only",
+  "processing_location": "on_device",
+  "output_contract": "longship.follow-scene.v1",
+  "actuator_scope": [],
+  "command_channel": false,
+  "hardware_enabled_by_default": false,
+  "upstream": [
+    {
+      "project": "librealsense",
+      "repository_url": "https://github.com/IntelRealSense/librealsense",
+      "license": "Apache-2.0"
+    },
+    {
+      "project": "OpenCV",
+      "repository_url": "https://github.com/opencv/opencv",
+      "license": "Apache-2.0"
+    }
+  ]
+}

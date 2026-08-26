@@ -11,6 +11,9 @@ Safety defaults are intentionally restrictive:
 - velocity limits default to zero and must be set by a target-qualified profile;
 - a monotonic, expiring **process-local Longship ownership token** is required;
   the reviewed SDK client does not enable Unitree's service-side lease feature;
+- a long-lived Runtime may refresh only the same active lease ID, epoch, and
+  actuator scope with a newer issue time and another bounded TTL; refresh
+  cannot revive an expired or stop-latched lease;
 - the onboard service is asked to use at most a 250 ms command duration, and an
   absolute-deadline watchdog requests zero velocity and latches on missed refresh;
 - the configured SDK timeout is a best-effort hint, not a wall-clock bound; the

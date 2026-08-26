@@ -48,7 +48,10 @@ def parse_brain_proposal(raw: str) -> TourBrainProposal:
         raise CodexProviderError("Codex response fields have invalid types")
     if len(value["message"]) > 500:
         raise CodexProviderError("Codex response is too large")
-    if any(ord(character) < 32 or ord(character) == 127 for character in value["message"]):
+    if any(
+        ord(character) < 32 or ord(character) == 127
+        for character in value["message"]
+    ):
         raise CodexProviderError("Codex speech text contains control characters")
     try:
         action = TourBrainAction(value["action"])
@@ -65,15 +68,34 @@ class CodexLocalBrain:
     that snapshot becomes stale before the result arrives.
     """
 
+    output_schema = _OUTPUT_SCHEMA
+    developer_instructions = _DEVELOPER_INSTRUCTIONS
+
     def __init__(
         self,
         workspace: str | Path,
         *,
         model: str | None = None,
+        reasoning_effort: str | None = None,
         timeout_s: float = 8.0,
     ) -> None:
+        supported_efforts = {
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        }
+        if (
+            reasoning_effort is not None
+            and reasoning_effort not in supported_efforts
+        ):
+            raise ValueError("Codex reasoning effort is unsupported")
         self.workspace = Path(workspace).resolve()
         self.model = model
+        self.reasoning_effort = reasoning_effort
         self.timeout_s = timeout_s
         self._codex: Any = None
         self._codex_factory: Any = None
@@ -97,7 +119,8 @@ class CodexLocalBrain:
             from openai_codex import ApprovalMode, AsyncCodex, Sandbox
         except ImportError as exc:
             raise CodexProviderError(
-                "Install the optional provider with: pip install 'longship-robotics[codex]'"
+                "Install the optional provider with: "
+                "pip install 'longship-robotics[codex]'"
             ) from exc
 
         self._sandbox = Sandbox.read_only
@@ -106,12 +129,16 @@ class CodexLocalBrain:
         self._thread_options = {
             "cwd": str(self.workspace),
             "approval_mode": self._approval_mode,
-            "developer_instructions": _DEVELOPER_INSTRUCTIONS,
+            "developer_instructions": self.developer_instructions,
             "ephemeral": True,
             "sandbox": self._sandbox,
         }
         if self.model:
             self._thread_options["model"] = self.model
+        if self.reasoning_effort:
+            self._thread_options["config"] = {
+                "model_reasoning_effort": self.reasoning_effort
+            }
         try:
             await self._open_codex()
         except Exception as exc:
@@ -139,18 +166,32 @@ class CodexLocalBrain:
 
     async def decide(self, text: str, snapshot: Any) -> TourBrainProposal:
         if not self._entered:
-            raise CodexProviderError("CodexLocalBrain must be used as an async context manager")
+            raise CodexProviderError(
+                "CodexLocalBrain must be used as an async context manager"
+            )
+        result = await self._run_prompt(self.build_prompt(text, snapshot))
+        if not result.final_response:
+            raise CodexProviderError("Codex returned no final response")
+        return self.parse_response(result.final_response, snapshot)
+
+    def build_prompt(self, text: str, snapshot: Any) -> str:
         request = {
             "user_text": text,
             "authoritative_state": snapshot.to_dict(),
             "available_tour_id": snapshot.tour_id,
             "allowed_actions": [action.value for action in TourBrainAction],
         }
-        prompt = (
+        return (
             "Choose one allowed high-level action for this voice-tour request. "
             "Return only JSON matching the supplied schema. Input:\n"
             + json.dumps(request, ensure_ascii=False, separators=(",", ":"))
         )
+
+    def parse_response(self, raw: str, snapshot: Any) -> TourBrainProposal:
+        del snapshot
+        return parse_brain_proposal(raw)
+
+    async def _run_prompt(self, prompt: str) -> Any:
         async with self._turn_lock:
             if self._closing or not self._entered:
                 raise CodexProviderError("Codex provider is closing")
@@ -166,7 +207,7 @@ class CodexLocalBrain:
                     prompt,
                     approval_mode=self._approval_mode,
                     cwd=str(self.workspace),
-                    output_schema=_OUTPUT_SCHEMA,
+                    output_schema=self.output_schema,
                     sandbox=self._sandbox,
                 )
                 self._active_turn = handle
@@ -188,9 +229,7 @@ class CodexLocalBrain:
             finally:
                 self._active_turn = None
                 self._active_run_task = None
-        if not result.final_response:
-            raise CodexProviderError("Codex returned no final response")
-        return parse_brain_proposal(result.final_response)
+        return result
 
     async def _start_thread(self) -> None:
         if self._codex is None or self._thread_options is None:

@@ -1,0 +1,19 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.target.mujoco-follow-person-proxy",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "target",
+  "entry_point": "plugins/targets/mujoco_follow_person/runner.py",
+  "maturity": "experimental-simulation-only",
+  "hardware_enabled_by_default": false,
+  "actuator_scope": ["base_motion"],
+  "input_contract": "longship.follow-command.v0",
+  "observation_contract": "longship.follow-scene.v1",
+  "optional_dependency": "mujoco>=3.1,<4",
+  "qualification_scope": "planar-physics-proxy-only",
+  "upstream": {
+    "project": "MuJoCo",
+    "repository_url": "https://github.com/google-deepmind/mujoco",
+    "license": "Apache-2.0"
+  }
+}

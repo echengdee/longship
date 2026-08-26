@@ -1,0 +1,71 @@
+{
+  "schema_version": "longship.follow-simulation.v0",
+  "scenario_id": "public-detour-and-reacquire-v0",
+  "duration_s": 20.0,
+  "step_s": 0.05,
+  "person_keyframes": [
+    {
+      "time_s": 0.0,
+      "world_x_m": 2.2,
+      "world_y_m": 0.0,
+      "visible": true,
+      "track_id": "synthetic-person-a"
+    },
+    {
+      "time_s": 4.0,
+      "world_x_m": 2.8,
+      "world_y_m": 0.5,
+      "visible": true,
+      "track_id": "synthetic-person-a"
+    },
+    {
+      "time_s": 5.0,
+      "world_x_m": 2.95,
+      "world_y_m": 0.55,
+      "visible": false,
+      "track_id": "synthetic-person-a"
+    },
+    {
+      "time_s": 5.6,
+      "world_x_m": 3.04,
+      "world_y_m": 0.55,
+      "visible": true,
+      "track_id": "synthetic-person-b"
+    },
+    {
+      "time_s": 10.0,
+      "world_x_m": 3.5,
+      "world_y_m": 0.2,
+      "visible": true,
+      "track_id": "synthetic-person-b"
+    },
+    {
+      "time_s": 20.0,
+      "world_x_m": 3.5,
+      "world_y_m": 0.2,
+      "visible": true,
+      "track_id": "synthetic-person-b"
+    }
+  ],
+  "obstacles": [
+    {
+      "world_x_m": 1.55,
+      "world_y_m": 0.0,
+      "radius_m": 0.22,
+      "active_from_s": 0.0,
+      "active_until_s": 7.0
+    },
+    {
+      "world_x_m": 2.5,
+      "world_y_m": -0.55,
+      "radius_m": 0.18,
+      "active_from_s": 2.0,
+      "active_until_s": 20.0
+    }
+  ],
+  "acceptance": {
+    "minimum_following_steps": 120,
+    "maximum_unsafe_forward_commands": 0,
+    "maximum_final_distance_error_m": 0.45
+  }
+}

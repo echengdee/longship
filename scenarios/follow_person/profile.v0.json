@@ -1,0 +1,48 @@
+{
+  "schema_version": "longship.follow-person-profile.v0",
+  "profile_id": "follow-person-public-low-speed-v0",
+  "runtime": {
+    "control_frequency_hz": 20.0,
+    "command_ttl_s": 0.15,
+    "scene_max_age_s": 0.5,
+    "scene_failure_grace_s": 1.0,
+    "acquire_timeout_s": 3.0,
+    "lost_target_timeout_s": 8.0,
+    "blocked_timeout_s": 3.0
+  },
+  "control": {
+    "desired_distance_m": 1.5,
+    "distance_deadband_m": 0.15,
+    "minimum_distance_m": 0.8,
+    "maximum_forward_speed_mps": 0.15,
+    "maximum_yaw_rate_radps": 0.2,
+    "distance_gain": 0.45,
+    "heading_gain": 1.2,
+    "forward_disable_angle_deg": 20.0,
+    "minimum_track_confidence": 0.6,
+    "lost_target_standoff_m": 0.35,
+    "lost_target_goal_tolerance_m": 0.2,
+    "reacquire_gate_m": 0.8,
+    "maximum_linear_accel_mps2": 0.25,
+    "maximum_yaw_accel_radps2": 0.4,
+    "maximum_linear_jerk_mps3": 1.0,
+    "maximum_yaw_jerk_radps3": 2.0
+  },
+  "safety": {
+    "emergency_stop_distance_m": 0.35,
+    "nominal_stop_distance_m": 0.85,
+    "slow_distance_m": 1.35,
+    "maximum_deceleration_mps2": 0.5,
+    "system_latency_s": 0.15,
+    "distance_margin_m": 0.2
+  },
+  "planner": {
+    "grid_resolution_m": 0.1,
+    "forward_extent_m": 4.0,
+    "side_extent_m": 2.0,
+    "robot_radius_m": 0.3,
+    "clearance_margin_m": 0.12,
+    "lookahead_distance_m": 0.45,
+    "target_exclusion_radius_m": 0.5
+  }
+}

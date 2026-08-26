@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:follow-scene:v1",
+  "title": "FollowScene",
+  "description": "Draft atomic RGB-D observation for the provider-neutral FollowPerson skill.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "sequence",
+    "captured_monotonic_ns",
+    "healthy",
+    "calibration_id",
+    "calibration_valid",
+    "detector_ready",
+    "floor_valid",
+    "tracks",
+    "obstacles",
+    "raw_forward_clearance_m",
+    "detail"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.follow-scene.v1"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "captured_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "healthy": {
+      "type": "boolean"
+    },
+    "calibration_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "calibration_valid": {
+      "type": "boolean"
+    },
+    "detector_ready": {
+      "type": "boolean"
+    },
+    "floor_valid": {
+      "type": "boolean"
+    },
+    "tracks": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/personTrack"
+      }
+    },
+    "obstacles": {
+      "type": "array",
+      "maxItems": 20000,
+      "items": {
+        "$ref": "#/$defs/obstaclePoint"
+      }
+    },
+    "raw_forward_clearance_m": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "detail": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "$defs": {
+    "personTrack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track_id",
+        "forward_m",
+        "left_m",
+        "confidence"
+      ],
+      "properties": {
+        "track_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "forward_m": {
+          "type": "number"
+        },
+        "left_m": {
+          "type": "number"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "obstaclePoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "forward_m",
+        "left_m",
+        "radius_m"
+      ],
+      "properties": {
+        "forward_m": {
+          "type": "number"
+        },
+        "left_m": {
+          "type": "number"
+        },
+        "radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        }
+      }
+    }
+  }
+}

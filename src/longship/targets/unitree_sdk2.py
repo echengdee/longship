@@ -318,6 +318,43 @@ class UnitreeG1HighLevelAdapter:
             self._last_sequence = -1
             self.last_stop_receipt = None
 
+    def refresh_lease(self, lease: LocomotionLease) -> None:
+        """Extend the active process-local lease without changing its owner.
+
+        Refresh does not create actuator authority. It accepts only the same
+        lease identity and epoch, requires a newer issue time, and re-applies
+        the bounded TTL checks. A stopped, closing, or expired adapter cannot
+        be revived through this path.
+        """
+
+        with self._state_lock:
+            now = self._clock_ns()
+            if not self._hardware_enabled:
+                raise HardwareDisabledError(
+                    "real Unitree commands are disabled by default"
+                )
+            if self._closed or self._closing:
+                raise UnitreeAdapterError("adapter is closed or closing")
+            if self._stop_latched:
+                raise CommandRejectedError(
+                    "stop is latched; lease cannot be refreshed"
+                )
+            active = self._active_lease
+            if active is None:
+                raise CommandRejectedError("no active lease can be refreshed")
+            self._validate_lease(lease, now)
+            if lease.lease_id != active.lease_id or lease.epoch != active.epoch:
+                raise CommandRejectedError(
+                    "lease refresh changed owner identity or epoch"
+                )
+            if lease.actuator_scope != active.actuator_scope:
+                raise CommandRejectedError("lease refresh changed actuator scope")
+            if lease.issued_monotonic_ns <= active.issued_monotonic_ns:
+                raise CommandRejectedError("lease refresh issue time must increase")
+            if now >= active.expires_monotonic_ns:
+                raise CommandRejectedError("expired lease cannot be refreshed")
+            self._active_lease = lease
+
     def command(self, setpoint: VelocitySetpoint) -> CommandReceipt:
         validation_error: CommandRejectedError | HardwareDisabledError | None = None
         validation_episode: StopEpisode | None = None
@@ -780,6 +817,7 @@ def connect_unitree_g1(
     limits: VelocityLimits | None = None,
     sdk_timeout_s: float = 0.05,
     max_command_ttl_s: float = 0.25,
+    max_lease_ttl_s: float = 2.0,
 ) -> UnitreeG1HighLevelAdapter:
     """Create the official-SDK shim after an explicit supervised hardware gate."""
 
@@ -800,6 +838,9 @@ def connect_unitree_g1(
         raise ValueError("limits must be a VelocityLimits instance")
     UnitreeG1HighLevelAdapter._require_range(
         "max_command_ttl_s", max_command_ttl_s, 0.05, 0.25
+    )
+    UnitreeG1HighLevelAdapter._require_range(
+        "max_lease_ttl_s", max_lease_ttl_s, 0.05, 10.0
     )
     if (
         not _finite_number(sdk_timeout_s)
@@ -826,5 +867,6 @@ def connect_unitree_g1(
         hardware_enabled=True,
         limits=limits,
         max_command_ttl_s=max_command_ttl_s,
+        max_lease_ttl_s=max_lease_ttl_s,
         transport_timeout_s=sdk_timeout_s,
     )
