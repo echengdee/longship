@@ -19,6 +19,10 @@ from longship.navigation.local_trajectory_engine import (
 )
 from longship.navigation import (
     NavigationHarnessFactory,
+    NavigationModeDriver,
+    NavigationModeDriverFactory,
+    NavigationModeRuntime,
+    NavigationModeRuntimeFactory,
     NavigationOperation,
     NavigationOperationStarter,
     NavigationSession,
@@ -60,6 +64,10 @@ class ContractImportTests(unittest.TestCase):
         self.assertIsNotNone(NavigationOperation)
         self.assertIsNotNone(NavigationOperationStarter)
         self.assertIsNotNone(NavigationHarnessFactory)
+        self.assertIsNotNone(NavigationModeDriver)
+        self.assertIsNotNone(NavigationModeDriverFactory)
+        self.assertIsNotNone(NavigationModeRuntime)
+        self.assertIsNotNone(NavigationModeRuntimeFactory)
         self.assertIsNotNone(NavigationSession)
         self.assertIsNotNone(NavigationSessionBuilder)
         self.assertIsNotNone(NavigationSessionFactory)

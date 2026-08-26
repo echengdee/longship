@@ -8,6 +8,9 @@ import unittest
 from longship.navigation import (
     NavigationAuthority,
     NavigationHarnessFactory,
+    NavigationModeRuntimeError,
+    NavigationModeRuntimeFactory,
+    NavigationModeState,
     NavigationRequest,
     NavigationResult,
     NavigationStopRequest,
@@ -92,6 +95,42 @@ class _SessionBuilder:
         return await self._factory.start_session(request, authority)
 
 
+class _ModeDriver:
+    def __init__(
+        self,
+        result: NavigationResult,
+        completion: asyncio.Event | None = None,
+    ) -> None:
+        self.trajectory_stream = _TrajectoryStream()
+        self._session_factory = _SessionFactory(result, completion)
+        self._session_factory.session.trajectory_stream = self.trajectory_stream
+        self.entered = 0
+        self.exited = 0
+
+    async def enter(self) -> None:
+        self.entered += 1
+
+    async def exit(self) -> None:
+        self.exited += 1
+
+    async def start_session(
+        self,
+        request: NavigationRequest,
+        authority: NavigationAuthority,
+    ) -> _Session:
+        return await self._session_factory.start_session(request, authority)
+
+
+class _ModeDriverFactory:
+    def __init__(self, driver: _ModeDriver) -> None:
+        self._driver = driver
+        self.create_calls = 0
+
+    def create_driver(self) -> _ModeDriver:
+        self.create_calls += 1
+        return self._driver
+
+
 def _request() -> NavigationRequest:
     return NavigationRequest(
         request_id="request-1",
@@ -117,6 +156,46 @@ def _result(request: NavigationRequest) -> NavigationResult:
 
 
 class StreamBackedNavigationPortTests(unittest.IsolatedAsyncioTestCase):
+    async def test_navigation_mode_keeps_shared_resources_between_goals(
+        self,
+    ) -> None:
+        request = _request()
+        authority = NavigationAuthority(request.authority_epoch)
+        completion = asyncio.Event()
+        driver = _ModeDriver(_result(request), completion)
+        runtime = NavigationModeRuntimeFactory(
+            _ModeDriverFactory(driver)
+        ).create_runtime()
+
+        await runtime.enter()
+        operation = await runtime.start_navigation(request, authority)
+
+        self.assertEqual(runtime.get_status().state, NavigationModeState.RUNNING)
+        self.assertEqual(driver.entered, 1)
+        self.assertIs(runtime.trajectory_stream, driver.trajectory_stream)
+        self.assertIs(operation.trajectory_stream, runtime.trajectory_stream)
+        self.assertEqual(driver._session_factory.started, [(request, authority)])
+
+        completion.set()
+        self.assertEqual(await operation.wait_result(), _result(request))
+        await runtime.exit()
+        self.assertEqual(runtime.get_status().state, NavigationModeState.STOPPED)
+        self.assertEqual(driver.exited, 1)
+
+    async def test_navigation_mode_rejects_navigation_before_enter(self) -> None:
+        request = _request()
+        authority = NavigationAuthority(request.authority_epoch)
+        driver = _ModeDriver(_result(request))
+        runtime = NavigationModeRuntimeFactory(
+            _ModeDriverFactory(driver)
+        ).create_runtime()
+
+        with self.assertRaisesRegex(
+            NavigationModeRuntimeError,
+            "not running",
+        ):
+            await runtime.start_navigation(request, authority)
+
     async def test_harness_factory_creates_an_outer_navigation_port(self) -> None:
         request = _request()
         authority = NavigationAuthority(request.authority_epoch)

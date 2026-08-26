@@ -40,13 +40,19 @@ method remains the terminal-result convenience call. This is the supported
 outer-layer seam for a visualization, safety, or trajectory-tracking module to
 consume live trajectories without reaching into Harness internals.
 
-An application constructs `NavigationHarnessFactory` once with a
-deployment-specific `NavigationSessionBuilder`, then passes
-`factory.create_navigation_port()` to Longship Runtime. The builder is the only
-place that assembles NoMaD, a ROS 2 observation source, map resources, and the
-continuous Harness services for one request. It returns a `NavigationSession`;
-the outer factory adapts that session to `NavigationPort` and
-`NavigationOperationStarter`.
+The preferred application integration is `NavigationModeRuntimeFactory`. It
+creates a fresh `NavigationModeRuntime` from a deployment-specific
+`NavigationModeDriver`; the application calls `enter()` once when it enters Nav
+mode and `exit()` when it leaves. Entering starts shared NoMaD, ROS 2, map, and
+default-start localization resources and exposes a shared `LocalTrajectoryStream`.
+Each `start_navigation()` call only creates a target-specific
+`NavigationSession` that publishes to that same stream. Consequently, entering
+Nav mode does not itself imply motion: the stream remains in an explicit
+non-motion state until an active target and usable localization produce an
+`ACTIVE` publication.
+
+`NavigationHarnessFactory` remains available as the lower-level one-shot
+adapter for deployments that intentionally build all resources per request.
 
 ## 2. End-to-end Data Flow
 
