@@ -32,6 +32,14 @@ An external integration layer consumes complete local trajectories and connects
 them to safety, trajectory tracking, control, and the robot platform. The
 Harness does not interpret raw NoMaD output as velocity or steering commands.
 
+For compatibility with Longship's existing `NavigationPort`, an integrating
+runtime may additionally implement `NavigationOperationStarter`.
+`start_navigation()` returns a `NavigationOperation` immediately, including
+the operation's read-only `LocalTrajectoryStream`; the existing `navigate_to()`
+method remains the terminal-result convenience call. This is the supported
+outer-layer seam for a visualization, safety, or trajectory-tracking module to
+consume live trajectories without reaching into Harness internals.
+
 ## 2. End-to-end Data Flow
 
 ```mermaid
