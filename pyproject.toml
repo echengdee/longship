@@ -9,6 +9,10 @@ description = "Contracts-first, plugin-driven runtime experiments for open robot
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
+dependencies = [
+    "PyYAML>=6.0,<7",
+    "pyzmq>=26,<28",
+]
 
 [project.optional-dependencies]
 codex = ["openai-codex>=0.144.4,<0.145"]
