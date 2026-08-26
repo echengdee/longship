@@ -20,6 +20,11 @@ mujoco-g1 = [
     "torch>=2",
 ]
 test = ["pytest>=8.0"]
+rl-test = [
+    "numpy>=1.26,<3",
+    "mujoco>=3.1,<4",
+    "onnxruntime>=1.18,<2",
+]
 unitree-mjlab = ["numpy>=1.26,<3", "onnxruntime>=1.18,<2"]
 
 [project.scripts]
