@@ -86,7 +86,16 @@ The first executable examples follow these boundaries:
   VLA boundary whose incomplete timing, gated dependency, and licensing block
   an executable adapter; and
 - [`locomotion/holosoma`](locomotion/holosoma/) records a pinned framework and
-  candidate-checkpoint audit boundary without importing the training stack.
+  candidate-checkpoint audit boundary without importing the training stack;
+- [`targets/mujoco_follow_person`](targets/mujoco_follow_person/) supplies the
+  executable Longship-authored planar physics target and interactive stack;
+- [`targets/mujoco_g1_external`](targets/mujoco_g1_external/) validates and
+  displays an external G1 asset bundle while explicitly blocking dynamic
+  activation without a qualified low-level locomotion provider; and
+- [`targets/mujoco_g1_policy`](targets/mujoco_g1_policy/) runs the existing
+  Longship FollowPerson composition on an externally installed Unitree RL Gym
+  12-joint G1 asset and policy, with immutable artifact locks and no vendored
+  third-party bytes.
 
 A deployment may package capture, Jackie and reserved-STOP KWS, VAD, and ASR as
 one `voice_input` composition when those stages must share one microphone

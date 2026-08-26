@@ -1,0 +1,1 @@
+"""Target-independent safety gates."""

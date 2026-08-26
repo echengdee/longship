@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:longship:schema:follow-qualification:v0",
+  "title": "FollowQualification",
+  "description": "Experimental reviewed binding of a FollowPerson profile, camera calibration, target, and evidence.",
+  "x-longship-status": "draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "qualification_id",
+    "target_id",
+    "profile_sha256",
+    "calibration_id",
+    "reviewer",
+    "evidence_refs",
+    "approved",
+    "expires_at_unix_s",
+    "maximum_runtime_s"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "longship.follow-qualification.v0"
+    },
+    "qualification_id": {
+      "$ref": "#/$defs/boundedString"
+    },
+    "target_id": {
+      "$ref": "#/$defs/boundedString"
+    },
+    "profile_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "calibration_id": {
+      "$ref": "#/$defs/boundedString"
+    },
+    "reviewer": {
+      "$ref": "#/$defs/boundedString"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      }
+    },
+    "approved": {
+      "type": "boolean"
+    },
+    "expires_at_unix_s": {
+      "type": "integer"
+    },
+    "maximum_runtime_s": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 3600
+    }
+  },
+  "$defs": {
+    "boundedString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  }
+}

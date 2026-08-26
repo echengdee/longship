@@ -1,0 +1,34 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.target.mujoco-g1-external-policy",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "target",
+  "entry_point": "plugins/targets/mujoco_g1_policy/runner.py",
+  "maturity": "experimental-simulation-only",
+  "activation": "explicit-external-artifacts-only",
+  "artifact_manifest": "model-artifacts.experimental.json",
+  "hardware_enabled_by_default": false,
+  "actuator_scope": ["g1_lower_body_12dof"],
+  "asset_distribution": "external-reference-only",
+  "requires": {
+    "mujoco": ">=3.11,<4",
+    "policy_runtime": "torchscript-cpu",
+    "robot_model": "external-unitree-g1-12dof-mjcf"
+  },
+  "upstream": {
+    "project": "unitree_rl_gym",
+    "repository_url": "https://github.com/unitreerobotics/unitree_rl_gym",
+    "repository_code_license": "BSD-3-Clause",
+    "artifact_license": "NOASSERTION"
+  },
+  "contract": {
+    "observation_profile_id": "unitree.g1.12dof.rl-gym.obs47.v0",
+    "action_space_id": "unitree.g1.12dof.rl-gym.raw-position-residual.v0",
+    "input_shape": [1, 47],
+    "output_shape": [1, 12],
+    "policy_candidate_guard": true,
+    "artifact_store_verification": true
+  },
+  "block_reason": "Simulation-only: checkpoint license and physical target qualification remain unresolved",
+  "physical_activation": "forbidden"
+}

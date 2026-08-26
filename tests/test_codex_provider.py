@@ -97,6 +97,7 @@ class FakeAsyncCodex:
         type(self).instance = self
         type(self).instances.append(self)
         self.thread_start_calls = 0
+        self.thread_start_kwargs = None
         self.threads: list[FakeThread] = []
         self.exited = False
 
@@ -115,6 +116,7 @@ class FakeAsyncCodex:
 
     async def thread_start(self, **kwargs):
         self.thread_start_calls += 1
+        self.thread_start_kwargs = kwargs
         type(self).total_thread_start_calls += 1
         first_global_thread = type(self).total_thread_start_calls == 1
         slow = self.first_thread_slow and first_global_thread
@@ -151,12 +153,20 @@ class CodexProviderLifecycleTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as workspace, patch.dict(
             sys.modules, {"openai_codex": self.fake_module()}
         ):
-            async with CodexLocalBrain(workspace) as brain:
+            async with CodexLocalBrain(
+                workspace,
+                model="gpt-5.6-terra",
+                reasoning_effort="none",
+            ) as brain:
                 proposal = await brain.decide("hello", snapshot())
 
         self.assertIs(proposal.action, TourBrainAction.RESPOND)
         sdk = FakeAsyncCodex.instance
         self.assertEqual(sdk.thread_start_calls, 1)
+        self.assertEqual(
+            sdk.thread_start_kwargs["config"],
+            {"model_reasoning_effort": "none"},
+        )
         self.assertEqual(sdk.threads[0].turn_kwargs["approval_mode"], "deny_all")
         self.assertEqual(sdk.threads[0].turn_kwargs["sandbox"], "read_only")
         self.assertIn("output_schema", sdk.threads[0].turn_kwargs)

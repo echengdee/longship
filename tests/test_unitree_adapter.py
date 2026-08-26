@@ -4,6 +4,8 @@ import math
 import threading
 import unittest
 
+from longship.contracts.skills.follow_person import FollowCommand
+from longship.targets.follow_person import UnitreeFollowMotion
 from longship.targets.unitree_sdk2 import (
     CommandRejectedError,
     HardwareDisabledError,
@@ -208,6 +210,70 @@ class UnitreeAdapterTests(unittest.TestCase):
                 with self.assertRaises(CommandRejectedError):
                     target.command(setpoint(clock, **overrides))
                 target.close()
+
+    def test_active_lease_can_only_be_refreshed_by_same_owner(self) -> None:
+        clock = FakeClock()
+        target = adapter(clock=clock)
+        target.arm(lease(clock))
+        clock.advance(100_000_000)
+        refreshed = LocomotionLease(
+            lease_id="lease-1",
+            epoch=1,
+            issued_monotonic_ns=clock(),
+            expires_monotonic_ns=clock() + 1_000_000_000,
+        )
+
+        target.refresh_lease(refreshed)
+        receipt = target.command(setpoint(clock))
+
+        self.assertTrue(receipt.accepted)
+        clock.advance(100_000_000)
+        with self.assertRaises(CommandRejectedError):
+            target.refresh_lease(
+                LocomotionLease(
+                    lease_id="different-owner",
+                    epoch=1,
+                    issued_monotonic_ns=clock(),
+                    expires_monotonic_ns=clock() + 1_000_000_000,
+                )
+            )
+        clock.advance(1_000_000_000)
+        with self.assertRaises(CommandRejectedError):
+            target.refresh_lease(
+                LocomotionLease(
+                    lease_id="lease-1",
+                    epoch=1,
+                    issued_monotonic_ns=clock(),
+                    expires_monotonic_ns=clock() + 1_000_000_000,
+                )
+            )
+        target.close()
+
+    def test_follow_motion_maps_commands_and_refreshes_same_lease(self) -> None:
+        clock = FakeClock()
+        client = FakeLocoClient()
+        target = adapter(client, clock=clock)
+        motion = UnitreeFollowMotion(target, lease_ttl_s=1.0, clock_ns=clock)
+        acquired = motion.acquire("follow-session", clock())
+        clock.advance(800_000_000)
+        command = FollowCommand(
+            session_id="follow-session",
+            sequence=1,
+            issued_monotonic_ns=clock(),
+            expires_monotonic_ns=clock() + 50_000_000,
+            forward_mps=0.1,
+            yaw_rate_radps=0.2,
+            reason="test follow command",
+        )
+
+        receipt = motion.apply(command)
+
+        self.assertTrue(acquired.accepted)
+        self.assertTrue(receipt.accepted)
+        self.assertEqual(client.calls[0][:3], (0.1, 0.0, 0.2))
+        stopped = motion.protective_stop("test complete")
+        self.assertFalse(stopped.verified_stopped)
+        motion.close()
 
     def test_short_deadline_watchdog_latches_and_sends_zero(self) -> None:
         clock = FakeClock()

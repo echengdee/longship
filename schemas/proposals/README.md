@@ -40,6 +40,10 @@ and
   cancellation, model handoff, safety, recovery, and health transitions.
 - `telemetry-envelope.v1.schema.json` — transport-neutral identity, timing,
   units, frames, freshness, quality, graph/model correlation, and privacy.
+- `follow-scene.v1.schema.json` — one atomic, synchronized person-track and
+  local-obstacle observation for the experimental FollowPerson provider seam.
+- `follow-qualification.v0.schema.json` — a reviewed, expiring binding of the
+  exact FollowPerson profile digest, camera calibration, target, and evidence.
 - `experience-episode.v1.schema.json` — a structured execution index that
   references immutable external artifacts instead of embedding media or logs.
 

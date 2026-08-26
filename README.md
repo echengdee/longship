@@ -223,6 +223,89 @@ velocity policy contract exercises that seam with synthetic tests only.
 remain default-off: no upstream repository or model weight is vendored, and
 unknown model licensing or missing target qualification blocks activation.
 
+## Run the Experimental FollowPerson Loop
+
+Longship also includes an independently authored FollowPerson V0 vertical
+slice. Its deterministic synthetic world closes person motion, robot motion,
+fresh RGB-D-style observations, local planning, obstacle guarding, expiring
+commands, target feedback, event capture, and a read-only live dashboard:
+
+```bash
+longship-follow simulate \
+  --profile scenarios/follow_person/profile.v0.json \
+  --scenario scenarios/follow_person/closed_loop.v0.json \
+  --events /tmp/longship-follow-simulation.jsonl
+```
+
+To validate instruction ingress, bounded Brain processing, semantic Skill
+admission, Runtime, Safety, target commands, feedback, and protected STOP in
+one report:
+
+```bash
+longship-follow system-simulate \
+  --profile scenarios/follow_person/profile.v0.json \
+  --scenario scenarios/follow_person/closed_loop.v0.json \
+  --instruction 'Jackie，跟着我走'
+```
+
+For a persistent Longship-native interaction terminal, keep the control loop
+running and enter commands such as `跟着我走`, `状态`, `暂停`, `继续`, and
+`停止`:
+
+```bash
+longship-follow stack \
+  --profile scenarios/follow_person/profile.v0.json \
+  --scenario scenarios/follow_person/closed_loop.v0.json \
+  --events /tmp/longship-follow-stack.jsonl
+```
+
+Add `--brain codex` after installing the `codex` extra to exercise the optional
+model-backed semantic Brain. Fixed controls and STOP always bypass that
+provider. See the [interaction stack design](docs/architecture/interaction-stack.md)
+for why this is a composition entry rather than a copied monolithic stack.
+
+The optional RealSense and Unitree seams remain disabled and unqualified by
+default. See the complete
+[simulation and supervised deployment guide](docs/guides/follow-person-v0.md)
+before evaluating those paths.
+
+An optional MuJoCo target plugin runs that same control path against visible
+planar physics and real collision contacts:
+
+```bash
+python3 plugins/targets/mujoco_follow_person/runner.py \
+  --profile scenarios/follow_person/profile.v0.json \
+  --scenario scenarios/follow_person/closed_loop.v0.json \
+  --system --viewer --keep-viewer
+```
+
+Replace `--system` with `--stack` to type commands while the MuJoCo window and
+control loop remain live. The externally referenced real G1 MJCF has a separate
+[asset-validation seam](plugins/targets/mujoco_g1_external/README.md). A second,
+experimental [dynamic G1 target](plugins/targets/mujoco_g1_policy/README.md)
+drives an externally installed 12-joint Unitree RL Gym G1 asset and policy
+through the same Longship interaction, Brain, Skill, Runtime, and Safety path.
+It validates real articulated free-base dynamics without copying third-party
+assets. It is distinct from the asset-only 29-DOF DDS model and does not
+qualify hardware deployment.
+
+That dynamic target uses the external Unitree RL Gym policy, not Holosoma. Its
+launcher can expose a read-only camera/environment HUD and can connect the
+current Codex login directly through Longship's Brain port. Exact setup,
+`gpt-5.6-terra`/`none` flags, HUD URL, and headless/desktop commands are in the
+[dynamic G1 target guide](plugins/targets/mujoco_g1_policy/README.md).
+After the governed-policy integration landed, this target was adapted to the
+same `ModelArtifactManifest`/`ArtifactStore` and policy-candidate guard
+primitives. It remains a distinct 47-to-12 RL Gym contract; it is not silently
+interchangeable with the new 98-to-29 MJLab or 100-to-29 Holosoma seams.
+
+Install the `mujoco` extra first for the planar target. The proxy qualifies the
+portable base-motion loop only; use the external G1 policy target when humanoid
+dynamics and balance-policy behavior are part of the test scope.
+See the explicit
+[parity and readiness matrix](docs/guides/follow-person-parity-readiness.md)
+before treating simulation evidence as provider or deployment readiness.
+
 ## Contracts First
 
 Longship will stabilize public protocols before expanding implementations.

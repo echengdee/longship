@@ -1,0 +1,14 @@
+{
+  "schema_version": "longship.follow-qualification.v0",
+  "qualification_id": "replace-with-reviewed-qualification-id",
+  "target_id": "replace-with-robot-identity",
+  "profile_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "calibration_id": "replace-with-reviewed-site-calibration",
+  "reviewer": "replace-with-accountable-reviewer",
+  "evidence_refs": [
+    "replace-with-immutable-evaluation-evidence"
+  ],
+  "approved": false,
+  "expires_at_unix_s": 0,
+  "maximum_runtime_s": 120.0
+}

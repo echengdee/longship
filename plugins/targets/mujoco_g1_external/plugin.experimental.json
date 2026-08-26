@@ -1,0 +1,17 @@
+{
+  "schema_version": "longship.plugin.experimental.v0",
+  "plugin_id": "longship.target.mujoco-g1-external",
+  "plugin_version": "0.1.0-alpha",
+  "kind": "target",
+  "entry_point": "plugins/targets/mujoco_g1_external/doctor.py",
+  "maturity": "asset-validation-only",
+  "activation": "blocked-without-qualified-low-level-locomotion",
+  "hardware_enabled_by_default": false,
+  "asset_distribution": "external-reference-only",
+  "upstream": {
+    "project": "unitree_mujoco",
+    "repository_url": "https://github.com/unitreerobotics/unitree_mujoco",
+    "repository_code_license": "BSD-3-Clause"
+  },
+  "block_reason": "A G1 MJCF is not a balancing locomotion controller; the current Longship high-level SDK target does not implement the simulator's LowCmd/LowState interface"
+}

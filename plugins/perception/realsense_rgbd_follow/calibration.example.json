@@ -1,0 +1,23 @@
+{
+  "schema_version": "longship.camera-extrinsic.v0",
+  "calibration_id": "replace-with-reviewed-site-calibration",
+  "confirmed": false,
+  "camera_optical_to_base_row_major": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ]
+}

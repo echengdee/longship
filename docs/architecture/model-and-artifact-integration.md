@@ -20,7 +20,11 @@ The repository now implements the smallest reusable part of this proposal:
   this slice; and
 - the Unitree RL MJLab G1 velocity-v0 seam validates its exact 98-value input,
   29-value output, 20 ms horizon, and whole-body lease using an injected runner
-  and synthetic tests.
+  and synthetic tests; and
+- the FollowPerson external G1 simulation adapts its independently authored
+  47-to-12 RL Gym loop to the same manifest/store and policy-candidate guard
+  primitives. The external MJCF bundle stays reference-only and no third-party
+  bytes enter this repository.
 
 This is an integration contract, not deployed locomotion. The official Unitree
 and Holosoma artifacts remain blocked pending weight-license review and a
@@ -30,6 +34,12 @@ reference plugin because its public materials do not yet establish complete,
 reviewed artifact, timing, mapping, and target-qualification locks. No adapter
 here opens DDS, invokes a robot SDK, downloads during a mission, or commands
 joints.
+
+The executable 12-joint G1 simulation is not evidence that the official
+29-joint MJLab or Holosoma candidates are compatible with its model. Provider
+selection may reuse governance contracts, but observation/action shape, named
+joint mapping, gains, simulator assets, and target qualification remain
+provider-specific.
 
 ## 1. The short answer
 
