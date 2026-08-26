@@ -7,6 +7,7 @@ import unittest
 
 from longship.navigation import (
     NavigationAuthority,
+    NavigationHarnessFactory,
     NavigationRequest,
     NavigationResult,
     NavigationStopRequest,
@@ -79,6 +80,18 @@ class _SessionFactory:
         return self.session
 
 
+class _SessionBuilder:
+    def __init__(self, factory: _SessionFactory) -> None:
+        self._factory = factory
+
+    async def build_session(
+        self,
+        request: NavigationRequest,
+        authority: NavigationAuthority,
+    ) -> _Session:
+        return await self._factory.start_session(request, authority)
+
+
 def _request() -> NavigationRequest:
     return NavigationRequest(
         request_id="request-1",
@@ -104,6 +117,18 @@ def _result(request: NavigationRequest) -> NavigationResult:
 
 
 class StreamBackedNavigationPortTests(unittest.IsolatedAsyncioTestCase):
+    async def test_harness_factory_creates_an_outer_navigation_port(self) -> None:
+        request = _request()
+        authority = NavigationAuthority(request.authority_epoch)
+        session_factory = _SessionFactory(_result(request))
+        factory = NavigationHarnessFactory(_SessionBuilder(session_factory))
+
+        navigation = factory.create_navigation_port()
+        operation = await navigation.start_navigation(request, authority)
+
+        self.assertEqual(await operation.wait_result(), _result(request))
+        self.assertEqual(session_factory.started, [(request, authority)])
+
     async def test_start_exposes_the_session_trajectory_stream(self) -> None:
         request = _request()
         authority = NavigationAuthority(request.authority_epoch)

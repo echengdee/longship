@@ -10,9 +10,11 @@ from .base import (
 )
 from .mock import MockNavigation
 from .operation import (
+    NavigationHarnessFactory,
     NavigationOperation,
     NavigationOperationStarter,
     NavigationSession,
+    NavigationSessionBuilder,
     NavigationSessionFactory,
     StreamBackedNavigationPort,
 )
@@ -20,6 +22,7 @@ from .operation import (
 __all__ = [
     "MockNavigation",
     "NavigationAuthority",
+    "NavigationHarnessFactory",
     "NavigationOperation",
     "NavigationOperationStarter",
     "NavigationPort",
@@ -27,6 +30,7 @@ __all__ = [
     "NavigationResult",
     "NavigationStopRequest",
     "NavigationSession",
+    "NavigationSessionBuilder",
     "NavigationSessionFactory",
     "StopResult",
     "StreamBackedNavigationPort",

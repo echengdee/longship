@@ -63,6 +63,49 @@ class NavigationSessionFactory(Protocol):
         ...
 
 
+@runtime_checkable
+class NavigationSessionBuilder(Protocol):
+    """Deployment-specific constructor for one Harness navigation session.
+
+    A NoMaD/ROS 2 builder owns the concrete composition of its map resources,
+    observation source, localization runtime, route plan, and trajectory
+    service. It returns only the operation boundary needed by Longship.
+    """
+
+    async def build_session(
+        self,
+        request: NavigationRequest,
+        authority: NavigationAuthority,
+    ) -> NavigationSession:
+        """Builds and starts one request-scoped Harness session."""
+        ...
+
+
+class NavigationHarnessFactory:
+    """Concrete outer composition root for a Harness-backed navigation port.
+
+    The integrating application constructs this class once with its selected
+    session builder, then exposes the result of ``create_navigation_port()``
+    to Longship Runtime. The factory deliberately does not import a policy,
+    ROS, a map backend, or a controller.
+    """
+
+    def __init__(self, session_builder: NavigationSessionBuilder) -> None:
+        self._session_builder = session_builder
+
+    def create_navigation_port(self) -> StreamBackedNavigationPort:
+        """Creates an independent outer navigation facade."""
+        return StreamBackedNavigationPort(self)
+
+    async def start_session(
+        self,
+        request: NavigationRequest,
+        authority: NavigationAuthority,
+    ) -> NavigationSession:
+        """Creates one deployment-specific session for the navigation facade."""
+        return await self._session_builder.build_session(request, authority)
+
+
 @dataclass(frozen=True, slots=True)
 class NavigationOperation:
     """Caller-facing handle for one active navigation request.

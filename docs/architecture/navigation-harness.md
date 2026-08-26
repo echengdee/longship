@@ -40,6 +40,14 @@ method remains the terminal-result convenience call. This is the supported
 outer-layer seam for a visualization, safety, or trajectory-tracking module to
 consume live trajectories without reaching into Harness internals.
 
+An application constructs `NavigationHarnessFactory` once with a
+deployment-specific `NavigationSessionBuilder`, then passes
+`factory.create_navigation_port()` to Longship Runtime. The builder is the only
+place that assembles NoMaD, a ROS 2 observation source, map resources, and the
+continuous Harness services for one request. It returns a `NavigationSession`;
+the outer factory adapts that session to `NavigationPort` and
+`NavigationOperationStarter`.
+
 ## 2. End-to-end Data Flow
 
 ```mermaid

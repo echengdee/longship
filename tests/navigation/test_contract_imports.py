@@ -18,9 +18,11 @@ from longship.navigation.local_trajectory_engine import (
     RouteBoundLocalTrajectoryEngine,
 )
 from longship.navigation import (
+    NavigationHarnessFactory,
     NavigationOperation,
     NavigationOperationStarter,
     NavigationSession,
+    NavigationSessionBuilder,
     NavigationSessionFactory,
     StreamBackedNavigationPort,
 )
@@ -57,7 +59,9 @@ class ContractImportTests(unittest.TestCase):
         self.assertIsNotNone(LocalTrajectoryStream)
         self.assertIsNotNone(NavigationOperation)
         self.assertIsNotNone(NavigationOperationStarter)
+        self.assertIsNotNone(NavigationHarnessFactory)
         self.assertIsNotNone(NavigationSession)
+        self.assertIsNotNone(NavigationSessionBuilder)
         self.assertIsNotNone(NavigationSessionFactory)
         self.assertIsNotNone(StreamBackedNavigationPort)
         self.assertIsNotNone(LocalizationObservationProducer)
