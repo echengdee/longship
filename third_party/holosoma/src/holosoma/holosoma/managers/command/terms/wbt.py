@@ -488,7 +488,16 @@ class AdaptiveTimestepsSampler:
             (0, self.adaptive_kernel_size - 1),  # Non-causal kernel
             mode="replicate",
         )
-        sampling_probabilities = torch.nn.functional.conv1d(sampling_probabilities, self.kernel.view(1, 1, -1)).view(-1)
+        # This is a tiny one-dimensional smoothing operation.  Express it as
+        # sliding-window dot products instead of dispatching to cuDNN: some
+        # Isaac Sim/PyTorch combinations cannot initialize cuDNN after Kit has
+        # loaded its CUDA libraries, while the native tensor kernels remain
+        # available.  ``unfold @ kernel`` is numerically equivalent to the
+        # cross-correlation performed by conv1d here.
+        sampling_windows = sampling_probabilities.view(-1).unfold(
+            0, self.adaptive_kernel_size, 1
+        )
+        sampling_probabilities = sampling_windows @ self.kernel
         return sampling_probabilities / sampling_probabilities.sum()
 
     def sample(self, num_samples: int) -> torch.Tensor:

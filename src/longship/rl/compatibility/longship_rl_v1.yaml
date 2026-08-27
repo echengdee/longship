@@ -27,6 +27,18 @@ sources:
     path: third_party/GR00T-WholeBodyControl
     upstream_revision: a0732b642c0333077e127a2f56ab0014c196bca4
     longship_tree: 3a7f6f3602df7f64d2ef2aa3e0f2b55c93dcf1d7
+  php_parkour:
+    repository: https://github.com/php-parkour/php-parkour.github.io
+    path: third_party/php-parkour.github.io
+    upstream_revision: b490875b6cc74dd79e96708e726bc0dbf57e5017
+  mimiclite:
+    repository: https://github.com/EGalahad/mimic-lite
+    path: third_party/mimic-lite
+    upstream_revision: 9c83d114da81659dddbd4130c0f9e1173b70a1b5
+  mimiclite_sim2real:
+    repository: https://github.com/EGalahad/sim2real
+    path: third_party/mimiclite-sim2real
+    upstream_revision: 43374998bcd93625de75621c00fad734848d3614
 
 contracts:
   embodiment: unitree_g1_29dof
@@ -53,9 +65,9 @@ backends:
       third_party/holosoma/src/holosoma_inference/holosoma_inference/models/loco/g1_29dof/fastsac_g1_29dof.onnx: 8346fd90778439395922a8c7256f24125ae84b8dea949128bac9e23c02bc7717
     required_assets:
       - third_party/holosoma/src/holosoma/holosoma/data/robots/g1/scenes/scene_g1_29dof_wbt_plane.xml
-      - src/longship/rl/sim2sim/simulator.py
-      - src/longship/rl/sim2sim/teleop.py
-      - src/longship/rl/sim2sim/adapters/holosoma_dds.py
+      - modules/longship-sim2real/src/longship_runtime/sim2sim/simulator.py
+      - modules/longship-sim2real/src/longship_runtime/sim2sim/teleop.py
+      - modules/longship-sim2real/src/longship_runtime/runtime/adapters/holosoma_dds.py
     required_capabilities:
       - network_interface_enumeration
       - cyclonedds_udp
@@ -74,11 +86,11 @@ backends:
       third_party/GR00T-WholeBodyControl/gear_sonic_deploy/planner/target_vel/V2/planner_sonic.onnx: 39b553e197f62f077975ba38512bc04781a3fc37c2af7c6756e04629f760edea
     required_assets:
       - third_party/holosoma/src/holosoma/holosoma/data/robots/g1/scenes/scene_g1_29dof_wbt_plane.xml
-      - src/longship/rl/sim2sim/simulator.py
-      - src/longship/rl/sim2sim/teleop.py
-      - src/longship/rl/runtime/onnx.py
-      - src/longship/rl/sim2sim/sonic_pipeline.py
-      - src/longship/rl/sim2sim/adapters/sonic_onnx.py
+      - modules/longship-sim2real/src/longship_runtime/sim2sim/simulator.py
+      - modules/longship-sim2real/src/longship_runtime/sim2sim/teleop.py
+      - modules/longship-sim2real/src/longship_runtime/runtime/onnx.py
+      - modules/longship-sim2real/src/longship_runtime/runtime/policies/sonic.py
+      - modules/longship-sim2real/src/longship_runtime/runtime/adapters/sonic_onnx.py
       - third_party/GR00T-WholeBodyControl/gear_sonic_deploy/policy/low_latency/observation_config.yaml
       - third_party/GR00T-WholeBodyControl/gear_sonic_deploy/config/longship/stage23_1700_stand.yaml
     required_capabilities:
@@ -102,13 +114,57 @@ backends:
     required_assets:
       - third_party/InstinctLab/models/hiking_in_the_wild/parkour_onboard_preview_stair/params/env.yaml
       - third_party/holosoma/src/holosoma/holosoma/data/robots/g1/scenes/scene_g1_29dof_wbt_plane.xml
-      - src/longship/rl/sim2sim/simulator.py
-      - src/longship/rl/sim2sim/teleop.py
-      - src/longship/rl/sim2sim/adapters/instinctlab_dds.py
+      - modules/longship-sim2real/src/longship_runtime/sim2sim/simulator.py
+      - modules/longship-sim2real/src/longship_runtime/sim2sim/teleop.py
+      - modules/longship-sim2real/src/longship_runtime/runtime/adapters/instinctlab_dds.py
     required_capabilities:
       - network_interface_enumeration
       - cyclonedds_udp
       - mujoco_offscreen_depth
     dds_depth_topic: rt/camera/depth
     model_source: https://drive.google.com/drive/folders/1DZPOviSAfiDgeA0ti1XZqGvS2oCmIEKU
+    status: candidate
+  php:
+    simulator: longship_mujoco
+    task: perceptive_humanoid_parkour
+    artifact: third_party/php-parkour.github.io/mujoco_wasm/public/2026-01-17_09-51-30_student-new-loco-old-skill_student.onnx
+    required_artifacts:
+      - third_party/php-parkour.github.io/mujoco_wasm/public/2026-01-17_09-51-30_student-new-loco-old-skill_student.onnx
+      - third_party/php-parkour.github.io/mujoco_wasm/public/2026-01-17_09-51-30_student-new-loco-old-skill_depth_backbone.onnx
+    artifact_sha256:
+      third_party/php-parkour.github.io/mujoco_wasm/public/2026-01-17_09-51-30_student-new-loco-old-skill_student.onnx: 4d1748450ad431c4f21f4e12dee61b6c6577f1d10b73d92be0737700072ac151
+      third_party/php-parkour.github.io/mujoco_wasm/public/2026-01-17_09-51-30_student-new-loco-old-skill_depth_backbone.onnx: acc3c57f324c35655a5582a9c6d88c4fdaefcd4f2b84fdf3856f2ed0e4b255a6
+    required_assets:
+      - third_party/php-parkour.github.io/mujoco_wasm/assets/scenes/g1_with_terrain.xml
+      - modules/longship-sim2real/src/longship_runtime/sim2sim/simulator.py
+      - modules/longship-sim2real/src/longship_runtime/runtime/policies/php.py
+      - modules/longship-sim2real/src/longship_runtime/runtime/adapters/php_dds.py
+    required_capabilities:
+      - network_interface_enumeration
+      - cyclonedds_udp
+      - mujoco_offscreen_depth
+    status: candidate
+  mimiclite:
+    simulator: longship_mujoco
+    task: g1_29dof_reference_motion_tracking
+    artifact: third_party/mimiclite-sim2real/checkpoints/mimic-lite/v1_1/policy.onnx
+    required_assets:
+      - src/longship/rl/experiments/mimiclite_g1_71cm_climb_turn_sit.yaml
+      - src/longship/rl/training/backends/mimiclite.py
+      - third_party/mimic-lite/cfg/task/motion/g1/climb_turn_sit_71cm.yaml
+      - third_party/mimiclite-assets/g1-climb-turn-sit-71cm/manifest.json
+      - third_party/mimiclite-assets/g1-climb-turn-sit-71cm/motions/climb_turn_floor_sit_71cm.npz
+      - third_party/mimiclite-sim2real/checkpoints/mimic-lite/v1_1/policy.yaml
+      - third_party/mimiclite-assets/g1_xmls/g1-mode_13_15.xml
+      - third_party/mimiclite-assets/any4hdmi-g1-lafan/manifest.json
+      - third_party/mimiclite-assets/any4hdmi-g1-lafan/motions/walk1_subject1.npz
+      - third_party/mimiclite-sim2real/sim2real/rl_policy/tracking.py
+      - third_party/any4hdmi/src/any4hdmi/__init__.py
+      - third_party/mjhub/src/mjhub/__init__.py
+      - modules/longship-sim2real/src/longship_runtime/runtime/adapters/mimiclite_dds.py
+      - modules/longship-sim2real/scripts/sim2sim/sync_mimiclite_artifacts.sh
+    required_capabilities:
+      - network_interface_enumeration
+      - cyclonedds_udp
+    artifact_source: gdrive:projects/simple-tracking/sim2real
     status: candidate

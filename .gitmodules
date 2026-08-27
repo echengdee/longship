@@ -1,0 +1,3 @@
+[submodule "modules/longship-sim2real"]
+	path = modules/longship-sim2real
+	url = git@github.com:LatentSmith/longship-sim2real.git

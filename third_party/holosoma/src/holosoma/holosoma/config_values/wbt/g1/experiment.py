@@ -166,6 +166,13 @@ g1_29dof_wbt_w_object = replace(
 
 g1_29dof_wbt_fast_sac_w_object = replace(
     g1_29dof_wbt_fast_sac,
+    algo=replace(
+        g1_29dof_wbt_fast_sac.algo,
+        config=replace(
+            g1_29dof_wbt_fast_sac.algo.config,
+            actor_learning_rate=1.5e-4,
+        ),
+    ),
     command=command.g1_29dof_wbt_command_w_object,
     robot=replace(
         robot.g1_29dof_w_object,
@@ -174,7 +181,7 @@ g1_29dof_wbt_fast_sac_w_object = replace(
     ),
     randomization=randomization.g1_29dof_wbt_randomization_w_object,
     observation=observation.g1_29dof_wbt_observation_w_object,
-    reward=reward.g1_29dof_wbt_reward_w_object,
+    reward=reward.g1_29dof_wbt_fast_sac_reward_w_object,
     scene=scene.g1_29dof_wbt_object_scene,
 )
 

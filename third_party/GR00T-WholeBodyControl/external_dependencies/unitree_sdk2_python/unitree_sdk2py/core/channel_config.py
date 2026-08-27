@@ -7,9 +7,8 @@ ChannelConfigHasInterface = '''<?xml version="1.0" encoding="UTF-8" ?>
                 </Interfaces>
             </General>
             <Tracing>
-                <Verbosity>config</Verbosity>
-            <OutputFile>/tmp/cdds.LOG</OutputFile>
-        </Tracing>
+                <Verbosity>warning</Verbosity>
+            </Tracing>
         </Domain>
     </CycloneDDS>'''
 

@@ -9,6 +9,7 @@ from longship.rl.registry import ComponentRegistry, RegistryError, components
 _MODEL_PARTS = {
     "encoder": "encoder",
     "backbone": "backbone",
+    "critic_backbone": "backbone",
     "actor_decoder": "decoder",
     "critic_decoder": "decoder",
     "q_decoder": "decoder",
@@ -25,6 +26,10 @@ def build_model(
     named architectural slots rather than interpreting a general YAML DAG.
     """
 
+    if registry is components:
+        from longship.rl.models import register_builtin_models
+
+        register_builtin_models()
     if not isinstance(config, Mapping):
         raise RegistryError("model config must be a mapping")
     policy_config = dict(config)

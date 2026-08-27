@@ -118,8 +118,9 @@ def create_video(video_frames, fps, save_dir, output_format="mp4", wandb_logging
 
     Parameters
     ----------
-    video_frames : np.ndarray
-        Video frames array with shape (T, H, W, 3) and dtype uint8.
+    video_frames : Sequence[np.ndarray] | np.ndarray
+        Video frames with individual shape (H, W, 3). Frames are encoded one at
+        a time so recording does not require a second full-size array copy.
     fps : int
         Frames per second for video playback.
     save_dir : Path
@@ -136,7 +137,9 @@ def create_video(video_frames, fps, save_dir, output_format="mp4", wandb_logging
     Path | None
         Path to the saved video file, or None if saving failed.
     """
-    h, w = video_frames.shape[1:3]
+    if len(video_frames) == 0:
+        raise ValueError("video_frames must contain at least one frame")
+    h, w = video_frames[0].shape[:2]
 
     # Ensure the directory exists
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -167,7 +170,8 @@ def create_video(video_frames, fps, save_dir, output_format="mp4", wandb_logging
 
         for frame in video_frames:
             # Convert RGB to BGR for OpenCV
-            frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            frame_uint8 = np.asarray(frame, dtype=np.uint8)
+            frame_bgr = cv2.cvtColor(frame_uint8, cv2.COLOR_RGB2BGR)
             out.write(frame_bgr)
         out.release()
 

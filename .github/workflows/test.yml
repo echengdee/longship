@@ -17,12 +17,15 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[test]"
+      - run: python -m pip install -e "./modules/longship-sim2real[test]"
       - run: python -m pytest -q tests --ignore=tests/test_rl_platform.py
 
   rl-unit:
@@ -35,12 +38,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: false
+          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[test,rl-test]"
+      - run: python -m pip install -e "./modules/longship-sim2real[test]"
       - run: python -m pytest -q tests/test_rl_platform.py
 
   nomad-integration:

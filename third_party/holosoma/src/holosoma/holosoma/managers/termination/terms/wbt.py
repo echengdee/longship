@@ -70,9 +70,21 @@ class BadTracking(TerminationTermBase):
         bad_motion_body_pos = self.bad_motion_body_pos(motion_command)
         bad_tracking = bad_ref_pos | bad_ref_ori | bad_motion_body_pos
 
+        self.last_failures = {
+            "reference_position": bad_ref_pos.detach().clone(),
+            "reference_orientation": bad_ref_ori.detach().clone(),
+            "motion_body_position": bad_motion_body_pos.detach().clone(),
+        }
+
         if motion_command.motion.has_object:
             bad_object_pos = self.bad_object_pos(motion_command)
             bad_object_ori = self.bad_object_ori(motion_command)
+            self.last_failures.update(
+                {
+                    "object_position": bad_object_pos.detach().clone(),
+                    "object_orientation": bad_object_ori.detach().clone(),
+                }
+            )
             bad_tracking |= bad_object_pos | bad_object_ori
 
         return bad_tracking

@@ -1,7 +1,8 @@
 # RL Platform Architecture
 
-> **Status:** Executable configuration and compatibility boundary. Concrete
-> neural networks remain owned by the selected upstream integration.
+> **Status:** Executable training skeleton. Longship owns reusable model
+> components and run orchestration; upstream integrations still own their
+> simulator-specific trainer loops and native production recipes.
 
 ## Responsibilities
 
@@ -17,7 +18,7 @@ experiment's `training.trainer.type`; its implementation is supplied by the
 selected training backend.
 
 ```text
-src/longship/rl/
+src/longship/rl/             # training repository
 ├── compatibility/     # one version/source/robot-contract lock
 ├── models/
 │   ├── policies/       # top-level forward graph
@@ -26,28 +27,36 @@ src/longship/rl/
 │   ├── decoders/       # actor, value, Q, and motion outputs
 │   └── distributions/  # action distributions
 ├── training/
-│   └── backends/       # HoloSoma, InstinctLab, SONIC adapters
-├── data/               # data contracts and loaders
-├── sim2sim/            # secondary-simulator runners and adapters
-└── deploy/             # exporters and target adapters
+│   └── backends/       # HoloSoma, InstinctLab, SONIC, MimicLite adapters
+└── data/               # data contracts and loaders
+
+modules/longship-sim2real/   # independent Git submodule
+├── src/longship_runtime/
+│   ├── runtime/        # shared policies, DDS adapters, profiles and teleop
+│   ├── sim2sim/        # MuJoCo process, scenes and launch orchestration
+│   └── deploy/         # physical sensors, targets and process orchestration
+└── scripts/            # Sim2Sim and real deployment entry points
 ```
 
-Python implementations live under `src/longship/rl`. The repository root does
-not create a second experiment hierarchy:
+Training implementations live under `src/longship/rl`. Execution code is an
+independently installable `longship-sim2real` submodule and never imports the
+training package. The repository root does not create a second experiment hierarchy:
 
 ```text
 outputs/                # ignored generated runs and resolved configs
-third_party/            # pinned upstream source snapshots
+environments/           # Longship-owned simulator runtime profiles
+third_party/            # pinned upstream source/model assets; not copied into submodule
 ```
 
 Experiments stay with the selected RL integration. A backend adapter translates
 that experiment into Longship's validated configuration boundary rather than
 copying every upstream recipe into a root-level `experiments/` directory.
 
-Data, Sim2Sim, and deployment implementations each have exactly one package
-under `src/longship/rl`. Their run parameters will be referenced by an
-experiment or supplied to the corresponding command; they do not create a
-second top-level directory tree.
+Policies do not belong to either execution target. Both Sim2Sim and physical
+deployment launch the same adapter from `runtime/adapters/`, with the same
+model pipeline from `runtime/policies/` and the same control profile from
+`runtime/profiles/`. Sim2Sim supplies MuJoCo DDS producers/consumers; deploy
+supplies physical sensors and robot targets. Neither target copies inference.
 
 ## Configuration and construction
 
@@ -67,6 +76,20 @@ For example, `HoloSomaBackend` with `trainer.type: PPO` means that Longship
 adapts the recipe to HoloSoma's PPO runner. It does not reimplement PPO in the
 model package.
 
+The first reusable model set is implemented in `models/`:
+
+- proprioceptive-history and depth-image encoders;
+- MLP and dense mixture-of-experts backbones;
+- Gaussian actor and scalar value decoders;
+- actor-critic and perceptive actor-critic policy graphs.
+
+These modules can be assembled and instantiated directly from YAML with
+`build_model()`. The bundled `hiking_g1_parkour.yaml` example documents the
+released 8x18x32 depth input, 128-D visual latent, 768-D proprioceptive input,
+and 29-D action output. Its upstream InstinctLab task remains authoritative for
+the complete production trainer graph until model-parameter translation is
+implemented by that backend.
+
 Registrations are separated by kind:
 
 - `policy`, `encoder`, `backbone`, and `decoder` for models;
@@ -80,11 +103,38 @@ This prevents a same-named component from crossing architectural boundaries.
 `ExperimentRunner` validates the recipe, creates a new output directory, and
 writes `resolved.yaml` before handing control to the training backend. The
 runner refuses to reuse an existing output directory, preventing accidental
-checkpoint and configuration overwrite.
+checkpoint and configuration overwrite. Every built-in backend first creates
+a shell-free `TrainingPlan` containing the exact argument vector, working
+directory, environment overrides, output path, and checkpoint patterns. A real
+run records this as `command.json`, including completion or failure state.
 
-The source trees currently stored under `third_party/` are upstream references.
-Concrete adapters must be independently reviewed and registered before an
-experiment becomes executable.
+The registered training adapters are `HoloSomaBackend`, `SonicBackend`,
+`InstinctLabBackend`, and `MimicLiteBackend`. They map Longship's seed and
+output directory into the actual upstream trainers without invoking a shell.
+MimicLite additionally maps the platform motion dataset, MJLab terrain, policy
+module, checkpoint source, parallel environment count, and iteration budget to
+Hydra while keeping its upstream PPO implementation authoritative.
+
+Runtime profiles are owned by Longship rather than by upstream repositories.
+They are dependency boundaries inside one training platform: the shared
+IsaacLab runtime remains pinned to Torch 2.5.1, while
+`environments/rl/mjlab` carries MJLab's newer Torch requirement. Both are
+selected and launched through the same experiment and `longship-rl-train`
+contract.
+
+Inspect a job without starting Isaac Lab or allocating a GPU:
+
+```bash
+longship-rl-train --root "$PWD" plan \
+  src/longship/rl/experiments/hiking_g1_parkour.yaml \
+  --output outputs/hiking-plan
+```
+
+Start it by replacing `plan` with `run`. `run` creates the output directory, so
+the supplied path must not already exist.
+
+The bundled `mimiclite_g1_71cm_climb_turn_sit.yaml` recipe follows the same
+contract for the 611-frame climb-turn-sit reference and `box71` training scene.
 
 ## Unified runtime and Sim2Sim preflight
 
@@ -100,6 +150,7 @@ Create the environment and inspect all registered Sim2Sim integrations with:
 conda env create -f environment.yml
 conda activate longship-rl
 pip install -e .
+pip install -e ./modules/longship-sim2real
 longship-rl-sim2sim preflight all --root "$PWD"
 ```
 
@@ -123,7 +174,7 @@ Current upstream snapshot status:
   observation contract are registered. The public snapshot does not contain
   the expert/student training implementation.
 
-The user-facing one-click entry is `scripts/sim2sim/run_hiking.sh`;
+The user-facing one-click entry is `modules/longship-sim2real/scripts/sim2sim/run_hiking.sh`;
 `run_instinctlab.sh` remains as a compatibility alias for the integration name.
 
 Artifact readiness and launch readiness are deliberately separate. All four
@@ -141,7 +192,7 @@ SONIC's planner, encoder and decoder use the shared Python ONNX Runtime engine.
 `provider: auto` selects CUDA when available and otherwise uses CPU, so CUDA and
 TensorRT are not launch requirements.
 Model-owned control values are not embedded in the simulator. Each backend has
-a versioned profile under `src/longship/rl/sim2sim/profiles/` that identifies
+a versioned profile under `modules/longship-sim2real/src/longship_runtime/runtime/profiles/` that identifies
 its robot MJCF/foot-contact preset, initialization pose, PD source,
 initialization duration, control rates, gantry settings, and policy artifact.
 The simulator executable and transport remain shared; physical parameters are
@@ -264,10 +315,10 @@ For the normal interactive path, the repository also provides one-command
 launchers that start and clean up all three processes automatically:
 
 ```bash
-./scripts/sim2sim/run_holosoma.sh
-./scripts/sim2sim/run_sonic.sh
-./scripts/sim2sim/run_instinctlab.sh
-./scripts/sim2sim/run_php.sh
+./modules/longship-sim2real/scripts/sim2sim/run_holosoma.sh
+./modules/longship-sim2real/scripts/sim2sim/run_sonic.sh
+./modules/longship-sim2real/scripts/sim2sim/run_instinctlab.sh
+./modules/longship-sim2real/scripts/sim2sim/run_php.sh
 ```
 
 They prefer the active compatible Conda environment, then discover the

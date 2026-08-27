@@ -17,6 +17,7 @@ from holosoma.agents.fast_sac.fast_sac_utils import (
     EmpiricalNormalization,
     SimpleReplayBuffer,
     save_params,
+    set_optimizer_learning_rate,
 )
 from holosoma.agents.modules.augmentation_utils import SymmetryUtils
 from holosoma.agents.modules.logging_utils import LoggingHelper
@@ -641,6 +642,10 @@ class FastSACAgent(BaseAlgo):
         self.qnet_target.load_state_dict(torch_checkpoint["qnet_target_state_dict"])
         self.log_alpha.data.copy_(torch_checkpoint["log_alpha"].to(self.device))
         self.actor_optimizer.load_state_dict(torch_checkpoint["actor_optimizer_state_dict"])
+        # Keep restored Adam moments, but honor the runtime experiment config.
+        # Optimizer state_dict includes its old LR and would otherwise silently
+        # defeat an intentional learning-rate change on resume.
+        set_optimizer_learning_rate(self.actor_optimizer, self.config.actor_learning_rate)
         self.q_optimizer.load_state_dict(torch_checkpoint["q_optimizer_state_dict"])
         self.alpha_optimizer.load_state_dict(torch_checkpoint["alpha_optimizer_state_dict"])
         self.scaler.load_state_dict(torch_checkpoint["grad_scaler_state_dict"])
@@ -729,7 +734,10 @@ class FastSACAgent(BaseAlgo):
 
             # NOTE: args.batch_size is the global batch size
             batch_size = max(args.batch_size // env.num_envs // self.gpu_world_size, 1)
-            if self.global_step > args.learning_starts:
+            # Check the process-local replay buffer rather than global_step. Checkpoints
+            # restore global_step but intentionally do not serialize the multi-GB replay
+            # buffer, so a resumed run must collect fresh transitions before updating.
+            if rb.ready_for_sampling(args.learning_starts):
                 with self.logging_helper.record_learn_time():
                     # Use batched sampling: sample once, normalize once, split into updates
                     prepared_batches = self._sample_and_prepare_batches(

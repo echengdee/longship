@@ -1,0 +1,68 @@
+schema_version: longship.rl-experiment.v1
+name: hiking_g1_parkour
+description: Depth-aware G1 parkour using the public InstinctLab training task.
+seed: 42
+
+# The policy graph is explicit. The 896-D actor input is the released
+# 768-D proprioceptive history plus the 128-D depth latent.
+model:
+  type: PerceptiveActorCriticPolicy
+  encoder:
+    type: DepthConvEncoder
+    input_shape: [8, 18, 32]
+    channels: [16, 32]
+    kernel_sizes: [5, 3]
+    strides: [2, 1]
+    paddings: [2, 1]
+    hidden_dims: [256]
+    output_dim: 128
+    activation: elu
+    max_pool: true
+  backbone:
+    type: MoEBackbone
+    input_dim: 896
+    hidden_dims: [256, 128, 64]
+    num_experts: 4
+    activation: elu
+  critic_backbone:
+    type: MLPBackbone
+    input_dim: 896
+    hidden_dims: [256, 128, 64]
+    activation: elu
+  actor_decoder:
+    type: GaussianActorDecoder
+    input_dim: 64
+    action_dim: 29
+    init_log_std: 0.0
+  critic_decoder:
+    type: ValueDecoder
+    input_dim: 64
+    output_dim: 1
+  depth_key: depth
+  proprio_key: proprio
+
+training:
+  backend:
+    type: InstinctLabBackend
+    source_root: third_party/InstinctLab
+    task: Instinct-Parkour-Target-Amp-G1-v0
+    headless: true
+    num_envs: 4096
+    max_iterations: 30000
+  trainer:
+    type: InstinctPPO
+    learning_rate: 0.001
+    clip_param: 0.2
+    entropy_coef: 0.01
+    num_learning_epochs: 5
+    num_mini_batches: 4
+
+environment:
+  robot: unitree_g1_29dof
+  task: perceptive_parkour
+  simulator: isaaclab
+  control_frequency_hz: 50
+
+data:
+  depth_shape: [8, 18, 32]
+  proprio_dim: 768

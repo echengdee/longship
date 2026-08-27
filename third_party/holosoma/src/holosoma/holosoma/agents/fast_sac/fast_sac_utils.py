@@ -12,6 +12,12 @@ from torch.amp import GradScaler
 from holosoma.config_types.algo import FastSACConfig
 
 
+def set_optimizer_learning_rate(optimizer: torch.optim.Optimizer, learning_rate: float) -> None:
+    """Apply the configured learning rate after restoring optimizer moments."""
+    for param_group in optimizer.param_groups:
+        param_group["lr"] = learning_rate
+
+
 class SimpleReplayBuffer(nn.Module):
     def __init__(
         self,
@@ -52,6 +58,23 @@ class SimpleReplayBuffer(nn.Module):
         )
         self.ptr = 0
 
+    @property
+    def num_stored(self) -> int:
+        """Return the number of valid time slots currently available for sampling."""
+        return min(self.ptr, self.buffer_size)
+
+    def ready_for_sampling(self, learning_starts: int) -> bool:
+        """Return whether the buffer has enough fresh data to begin gradient updates.
+
+        ``global_step`` is restored from FastSAC checkpoints, while this replay buffer is
+        intentionally process-local.  Basing warmup on the restored global step therefore
+        starts learning from an almost empty buffer after a resume.  Use the actual number
+        of stored transitions instead.  ``n_steps`` is included so multi-step sampling can
+        never begin before one complete return window exists.
+        """
+        minimum_transitions = max(learning_starts, self.n_steps - 1)
+        return self.num_stored > minimum_transitions
+
     def extend(
         self,
         tensor_dict: TensorDict,
@@ -84,7 +107,7 @@ class SimpleReplayBuffer(nn.Module):
         if self.n_steps == 1:
             indices = torch.randint(
                 0,
-                min(self.buffer_size, self.ptr),
+                self.num_stored,
                 (self.n_env, batch_size),
                 device=self.device,
             )

@@ -137,7 +137,13 @@ class MotionLoader:
         """Loads the motion from the csv file."""
         if self.motion_file.endswith(".npz"):
             data = np.load(self.motion_file)
-            self.input_fps = round(1 / data.get("fps", 1 / self.input_fps))
+            # Historical HoloSoma files stored the frame period under ``fps``,
+            # while the public OmniRetarget dataset stores the actual frequency
+            # (for example 30).  Accept both representations.
+            fps_value = float(np.asarray(data.get("fps", self.input_fps)).reshape(-1)[0])
+            if not np.isfinite(fps_value) or fps_value <= 0:
+                raise ValueError(f"Invalid fps value {fps_value!r} in {self.motion_file}")
+            self.input_fps = round(1.0 / fps_value) if fps_value <= 1.0 else round(fps_value)
             self.input_dt = 1.0 / self.input_fps
             motion = torch.from_numpy(data["qpos"]).to(torch.float32)
         else:

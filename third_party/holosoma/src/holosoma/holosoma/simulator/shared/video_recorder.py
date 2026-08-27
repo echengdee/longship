@@ -417,10 +417,6 @@ class VideoRecorderInterface(ABC):
             return
 
         try:
-            # Convert frames to numpy array
-            video_array = np.array(self.video_frames)
-            video_array_uint8 = video_array.astype(np.uint8)
-
             # Calculate actual video FPS based on control frequency and playback rate
             # Frames are captured at control_frequency = sim_fps / control_decimation
             # To achieve desired playback rate: actual_fps = control_frequency * playback_rate
@@ -434,7 +430,7 @@ class VideoRecorderInterface(ABC):
 
             # Create and save video
             create_video(
-                video_frames=video_array_uint8,
+                video_frames=self.video_frames,
                 fps=display_fps,
                 save_dir=save_dir,
                 output_format=self.config.output_format,

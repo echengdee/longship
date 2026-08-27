@@ -110,4 +110,28 @@ g1_29dof_wbt_reward_w_object = RewardManagerCfg(
     }
 )
 
-__all__ = ["g1_29dof_wbt_fast_sac_reward", "g1_29dof_wbt_reward", "g1_29dof_wbt_reward_w_object"]
+g1_29dof_wbt_fast_sac_reward_w_object = RewardManagerCfg(
+    terms={
+        **g1_29dof_wbt_reward_w_object.terms,
+        # FastSAC needs the stronger body-position tracking signal used by the
+        # non-object FastSAC preset, while retaining the proven -0.1 action-rate
+        # regularization and all object rewards from the object preset.
+        "motion_relative_body_position_error_exp": RewardTermCfg(
+            func="holosoma.managers.reward.terms.wbt:motion_relative_body_position_error_exp",
+            params={"sigma": 0.3},
+            weight=2.0,
+        ),
+        "object_global_ref_position_error_exp": RewardTermCfg(
+            func="holosoma.managers.reward.terms.wbt:object_global_ref_position_error_exp",
+            params={"sigma": 0.3},
+            weight=2.0,
+        ),
+    }
+)
+
+__all__ = [
+    "g1_29dof_wbt_fast_sac_reward",
+    "g1_29dof_wbt_fast_sac_reward_w_object",
+    "g1_29dof_wbt_reward",
+    "g1_29dof_wbt_reward_w_object",
+]

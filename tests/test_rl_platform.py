@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tempfile
+import threading
 import unittest
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,31 +13,37 @@ from longship.rl.builder import build_model
 from longship.rl.compatibility import CompatibilityLock, CompatibilityLockError
 from longship.rl.config import ExperimentConfig, ExperimentConfigError
 from longship.rl.registry import ComponentRegistry, RegistryError
-from longship.rl.sim2sim.dds import (
+from longship_runtime.runtime.dds import (
     G1_29DOF_JOINTS,
     SECONDARY_IMU_TOPIC,
     DdsContract,
     sdk_pythonpath,
 )
-from longship.rl.sim2sim.launch import backend_launch
-from longship.rl.sim2sim.preflight import inspect_artifact
-from longship.rl.sim2sim.control import ControlMode, PolicyControl
-from longship.rl.sim2sim.adapters.holosoma_dds import _advance_phase
-from longship.rl.sim2sim.profile import bundled_profile_path, load_control_profile
-from longship.rl.sim2sim.hiking_pipeline import (
+from longship_runtime.sim2sim.contract import validate_sim2sim_contract
+from longship_runtime.sim2sim.launch import backend_launch
+from longship_runtime.runtime.motion_reference import (
+    G1ReferenceTrajectory,
+    load_g1_reference,
+    rebase_g1_reference,
+)
+from longship_runtime.runtime.preflight import inspect_artifact
+from longship_runtime.runtime.control import ControlMode, PolicyControl
+from longship_runtime.runtime.adapters.holosoma_dds import _advance_phase
+from longship_runtime.runtime.profile import bundled_profile_path, load_control_profile
+from longship_runtime.runtime.policies.hiking import (
     POLICY_SIGNS,
     HikingModeCommand,
     dds_to_policy,
     policy_to_dds,
 )
-from longship.rl.sim2sim.teleop import CAPABILITIES, TeleopCommand
-from longship.rl.sim2sim.simulator import (
+from longship_runtime.runtime.teleop import CAPABILITIES, TeleopCommand
+from longship_runtime.sim2sim.simulator import (
     InteractiveControls,
     LowCommandSnapshot,
     _draw_virtual_gantry,
     _update_tracking_camera,
 )
-from longship.rl.sim2sim.sonic_pipeline import (
+from longship_runtime.runtime.policies.sonic import (
     ISAACLAB_TO_MUJOCO,
     MUJOCO_TO_ISAACLAB,
     SonicMotion,
@@ -125,7 +132,10 @@ class RLPlatformTests(unittest.TestCase):
 
     def test_sim2sim_rejects_physical_network_interface(self) -> None:
         with self.assertRaisesRegex(ValueError, "loopback"):
-            DdsContract(interface="eth0").validate()
+            validate_sim2sim_contract(DdsContract(interface="eth0"))
+
+    def test_shared_dds_contract_accepts_physical_interface(self) -> None:
+        DdsContract(interface="eth0").validate()
 
     def test_all_backends_use_the_same_dds_topics(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -161,7 +171,7 @@ class RLPlatformTests(unittest.TestCase):
                 for backend in ("holosoma", "sonic", "instinctlab", "php")
             ]
         for launch in launches:
-            self.assertIn("longship.rl.sim2sim.simulator", launch.simulator.argv)
+            self.assertIn("longship_runtime.sim2sim.simulator", launch.simulator.argv)
             self.assertIn("--viewer", launch.simulator.argv)
             self.assertIn("--gantry", launch.simulator.argv)
             self.assertIn("--profile", launch.controller.argv)
@@ -170,12 +180,26 @@ class RLPlatformTests(unittest.TestCase):
         self.assertNotIn("--depth", launches[0].simulator.argv)
         self.assertNotIn("--depth", launches[1].simulator.argv)
         self.assertIn("--depth", launches[2].simulator.argv)
+        self.assertIn("--depth", launches[3].simulator.argv)
+        self.assertIn("--depth-camera-quat", launches[3].simulator.argv)
+
+    def test_sonic_omniretarget_profile_wires_one_shared_simulator(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        profile = (
+            root
+            / "modules/longship-sim2real/src/longship_runtime/runtime/profiles/sonic_omniretarget.yaml"
+        )
+        launch = backend_launch(root, "sonic", "python", profile)
+        self.assertIn("--reference-motion", launch.controller.argv)
+        self.assertIn("--reference-start-frame", launch.controller.argv)
+        self.assertIn("--object-reference", launch.simulator.argv)
+        self.assertIn("longship_runtime.sim2sim.simulator", launch.simulator.argv)
 
     def test_every_backend_has_a_zmq_keyboard_process(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             launches = [backend_launch(temporary, name) for name in CAPABILITIES]
         for launch in launches:
-            self.assertIn("longship.rl.sim2sim.teleop", launch.teleop.argv)
+            self.assertIn("longship_runtime.runtime.teleop", launch.teleop.argv)
             self.assertIn("--teleop-endpoint", launch.controller.argv)
 
     def test_teleop_capabilities_do_not_invent_hiking_commands(self) -> None:
@@ -215,6 +239,54 @@ class RLPlatformTests(unittest.TestCase):
                 np.arange(29),
             )
         )
+
+    def test_omniretarget_reference_is_resampled_for_sonic(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "motion.npz"
+            qpos = np.zeros((3, 43), dtype=np.float64)
+            qpos[:, 0] = 1.0
+            qpos[:, 4:7] = ((0.0, 0.0, 0.8), (0.1, 0.0, 0.8), (0.2, 0.0, 0.8))
+            qpos[:, 7:36] = np.arange(29)[None] + np.arange(3)[:, None]
+            qpos[:, 36] = 1.0
+            qpos[:, 40:43] = (0.5, 0.0, 0.7)
+            np.savez(path, fps=np.asarray((25.0,)), qpos=qpos)
+            reference = load_g1_reference(path, target_fps=50.0)
+        self.assertEqual(reference.frames, 5)
+        self.assertTrue(np.allclose(reference.root_positions[-1], (0.2, 0.0, 0.8)))
+        self.assertTrue(np.allclose(reference.object_positions[0], (0.5, 0.0, 0.7)))
+        self.assertTrue(np.allclose(reference.root_quaternions[:, 0], 1.0))
+        rebased = rebase_g1_reference(reference)
+        self.assertTrue(np.allclose(rebased.root_positions[0], 0.0))
+        self.assertTrue(np.allclose(rebased.root_quaternions[0], (1.0, 0.0, 0.0, 0.0)))
+
+    def test_bundled_sonic_csv_reference_loads_in_hardware_order(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        path = (
+            root
+            / "third_party/GR00T-WholeBodyControl/gear_sonic_deploy/reference/award_v2r_smooth"
+        )
+        reference = load_g1_reference(path)
+        self.assertEqual(reference.joint_positions.shape, (180, 29))
+        self.assertEqual(reference.root_quaternions.shape, (180, 4))
+        self.assertAlmostEqual(reference.fps, 50.0)
+
+    def test_sonic_accepts_external_reference_without_planner(self) -> None:
+        reference = G1ReferenceTrajectory(
+            joint_positions=np.tile(np.arange(29), (2, 1)),
+            joint_velocities=np.zeros((2, 29)),
+            root_positions=np.zeros((2, 3)),
+            root_quaternions=np.tile((1.0, 0.0, 0.0, 0.0), (2, 1)),
+            fps=50.0,
+        )
+        pipeline = SonicOnnxPipeline.__new__(SonicOnnxPipeline)
+        pipeline._motion_lock = threading.Lock()
+        pipeline.planner_active = True
+        pipeline.external_reference_active = False
+        pipeline.sim_time = 0.0
+        pipeline.initialize_reference(reference)
+        self.assertFalse(pipeline.planner_active)
+        self.assertTrue(pipeline.external_reference_active)
+        self.assertTrue(np.array_equal(pipeline.motion.joint_positions[0], np.arange(29)[MUJOCO_TO_ISAACLAB]))
 
     def test_python_sonic_planner_keeps_its_own_command_semantics(self) -> None:
         command = SonicPlannerCommand()

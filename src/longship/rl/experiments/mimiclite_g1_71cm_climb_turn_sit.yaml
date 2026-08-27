@@ -1,0 +1,56 @@
+schema_version: longship.rl-experiment.v1
+name: mimiclite_g1_71cm_climb_turn_sit
+description: G1 full-motion tracking for climbing into a 0.71 m cargo box, turning, and sitting.
+seed: 42
+tags: [mimiclite, g1, motion_tracking, box71, sim2sim]
+
+model:
+  type: MimicLiteTrackingPolicy
+  observation_horizon: 4
+  action_dim: 29
+  actor_hidden_dims: [1024, 1024, 1024]
+  reference_conditioning: link_pose
+
+training:
+  backend:
+    type: MimicLiteBackend
+    source_root: third_party/active-adaptation-dev
+    mimic_root: third_party/mimic-lite
+    motion_config: g1/climb_turn_sit_71cm
+    terrain: box71
+    module: huge
+    num_envs: 32
+    total_iters: 4000
+    checkpoint_interval: 100
+    upload_interval: 1000
+    checkpoint: run:elijahgalahad/mimic_lite/xua2csee
+    wandb_mode: disabled
+    hf_hub_offline: false
+  trainer:
+    type: MimicLitePPO
+    learning_rate: 0.0003
+    clip_param: 0.2
+    entropy_coef_start: 0.01
+    entropy_coef_end: 0.002
+
+environment:
+  robot: unitree_g1_29dof
+  task: full_motion_reference_tracking
+  simulator: mjlab
+  control_frequency_hz: 50
+  scene:
+    type: box71
+    cargo_floor_height_m: 0.71
+    cargo_roof_bottom_m: 1.87
+    cargo_length_m: 3.20
+    cargo_width_m: 1.75
+
+data:
+  format: mimic_lite_npz
+  motion_file: third_party/mimiclite-assets/g1-climb-turn-sit-71cm/motions/climb_turn_floor_sit_71cm.npz
+  manifest: third_party/mimiclite-assets/g1-climb-turn-sit-71cm/manifest.json
+  source_motion: OmniRetarget climb_12_z_scale_1.0
+  frames: 611
+  fps: 50
+  duration_s: 12.22
+  full_motion: true

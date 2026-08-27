@@ -30,11 +30,20 @@ rl-test = [
     "onnxruntime>=1.18,<2",
 ]
 unitree-mjlab = ["numpy>=1.26,<3", "onnxruntime>=1.18,<2"]
+rl-train = ["torch>=2.5,<3"]
 
 [project.scripts]
 longship-follow = "longship.cli.follow_person:main"
 longship-tour = "longship.tour.cli:main"
+longship-rl-train = "longship.rl.training.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["longship*"]
+
+[tool.setuptools.package-data]
+"longship.rl.compatibility" = ["*.yaml"]
+"longship.rl.experiments" = ["*.yaml"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "modules/longship-sim2real/src"]

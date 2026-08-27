@@ -23,7 +23,7 @@ adapter 负责机器人差异。后续 HoloSoma/SONIC 只需注册 adapter 与 Y
 默认配置在：
 
 ```text
-src/longship/rl/deploy/profiles/hiking_g1.yaml
+modules/longship-sim2real/src/longship_runtime/deploy/profiles/hiking_g1.yaml
 ```
 
 确认或覆盖：
@@ -51,13 +51,13 @@ python -c 'import cv2, cyclonedds, onnxruntime, pyrealsense2, unitree_sdk2py, zm
 也不会发布 LowCmd：
 
 ```bash
-./scripts/deploy/run_real.sh hiking_g1 --print-command
+./modules/longship-sim2real/scripts/deploy/run_real.sh hiking_g1 --print-command
 ```
 
 临时覆盖现场参数：
 
 ```bash
-./scripts/deploy/run_real.sh hiking_g1 --print-command \
+./modules/longship-sim2real/scripts/deploy/run_real.sh hiking_g1 --print-command \
   --interface enp5s0 \
   --domain-id 0 \
   --camera-serial 346522071778
@@ -78,7 +78,7 @@ export REMOTE_CONFIRMED=1
 export ROBOT_MODE_CONFIRMED=1
 export FALL_ZONE_CLEAR_CONFIRMED=1
 
-./scripts/deploy/run_real.sh hiking_g1
+./modules/longship-sim2real/scripts/deploy/run_real.sh hiking_g1
 ```
 
 启动器先等待真实 D435i 深度和 G1 `LowState + secondary_imu` 到齐，再释放 Unitree
@@ -96,7 +96,7 @@ w  -> 前进
 障碍分别完成后再进行。当前 Parkour 台阶首触问题尚未调优，不应直接把现有仿真结果
 视为楼梯实机放行依据。
 
-`scripts/deploy/run_hiking_g1.sh` 仅是上述统一命令的便捷包装，不包含部署逻辑。
+`modules/longship-sim2real/scripts/deploy/run_hiking_g1.sh` 仅是上述统一命令的便捷包装，不包含部署逻辑。
 运行日志位于 `outputs/deploy/hiking_g1/<时间>/depth_camera.log` 和 `controller.log`。
 
 ## 4. 远程视觉监控
@@ -125,7 +125,7 @@ Codex/VS Code Remote 也可以直接转发实机的 `8080` 端口。服务默认
 因为当前调试页面没有登录认证。确实需要局域网直接访问时，可以显式运行：
 
 ```bash
-./scripts/deploy/run_real.sh hiking_g1 --visualization-bind-host 0.0.0.0
+./modules/longship-sim2real/scripts/deploy/run_real.sh hiking_g1 --visualization-bind-host 0.0.0.0
 ```
 
 端口被占用时可通过 `--visualization-port 18080` 修改；不需要页面时使用

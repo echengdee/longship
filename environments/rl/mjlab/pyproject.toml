@@ -1,0 +1,15 @@
+[project]
+name = "longship-rl-mjlab-runtime"
+version = "0.1.0"
+requires-python = "==3.12.*"
+dependencies = [
+    "active_adaptation[mjlab]",
+    "mimic-lite",
+]
+
+[tool.uv.sources]
+active_adaptation = { path = "../../../third_party/active-adaptation-dev", editable = true }
+mimic-lite = { path = "../../../third_party/mimic-lite", editable = true }
+
+[tool.uv]
+package = false

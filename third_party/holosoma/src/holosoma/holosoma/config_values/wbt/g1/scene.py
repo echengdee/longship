@@ -11,6 +11,7 @@ g1_29dof_wbt_object_scene = SceneConfig(
     rigid_objects={
         "object": RigidObjectConfig(
             urdf_file="holosoma/data/scene_objects/boxes/large_box.urdf",
+            xml_file="holosoma/data/scene_objects/boxes/large_box.xml",
         )
     },
 )

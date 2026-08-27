@@ -1,0 +1,13 @@
+<mujoco model="large_box">
+  <compiler meshdir="./"/>
+  <asset>
+    <mesh name="large_box_mesh" file="largebox.obj" scale="1 1 1"/>
+  </asset>
+  <worldbody>
+    <body name="baseLink">
+      <inertial pos="0 0 0" mass="0.1" diaginertia="0.002 0.002 0.002"/>
+      <geom type="mesh" mesh="large_box_mesh" friction="0.9 0.5 0.5"
+            rgba="0.7 0.8 0.9 1" solref="0.02 1" solimp="0.9 0.95 0.001"/>
+    </body>
+  </worldbody>
+</mujoco>

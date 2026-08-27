@@ -18,5 +18,6 @@ dependencies:
       - onnxruntime-gpu==1.23.2
       - cyclonedds==0.10.2
       - pyrealsense2>=2.55,<3
+      - -e ./modules/longship-sim2real[sim,real]
       - -e ./third_party/GR00T-WholeBodyControl/external_dependencies/unitree_sdk2_python
       - -e ./third_party/GR00T-WholeBodyControl/gear_sonic[sim]
