@@ -143,6 +143,10 @@ class PolicyControl:
         self._target_lin_x = self._target_lin_y = self._target_yaw = 0.0
         self._velocity_updated = None
 
+    def stop_motion(self) -> None:
+        """Clear both commanded and smoothed velocity state immediately."""
+        self._zero_velocity()
+
     def target(self, current_q: np.ndarray, now: float | None = None) -> np.ndarray | None:
         if self.mode is ControlMode.IDLE:
             return None

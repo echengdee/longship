@@ -142,10 +142,29 @@ class HikingOnnxPolicy:
         self.histories = [deque(maxlen=HISTORY_LENGTH) for _ in range(6)]
         self.depth_history: deque[np.ndarray] = deque(maxlen=DEPTH_HISTORY_LENGTH)
         self.last_action = np.zeros(29, dtype=np.float32)
+        self.last_depth_input = np.zeros((18, 32), dtype=np.float32)
 
     @property
     def providers(self) -> tuple[str, ...]:
         return self.actor.providers
+
+    def reset_history(self, last_action: np.ndarray | None = None) -> None:
+        """Start a fresh observation window at an agent handoff.
+
+        The next inference seeds every history slot from the current robot
+        state.  ``last_action`` remains continuous with the command most
+        recently sent by the outgoing agent.
+        """
+        for history in self.histories:
+            history.clear()
+        self.depth_history.clear()
+        if last_action is not None:
+            action = np.asarray(last_action, dtype=np.float32)
+            if action.shape != self.last_action.shape:
+                raise ValueError(
+                    f"last_action shape {action.shape} does not match {self.last_action.shape}"
+                )
+            self.last_action = action.copy()
 
     @staticmethod
     def preprocess_depth(depth: np.ndarray) -> np.ndarray:
@@ -167,6 +186,7 @@ class HikingOnnxPolicy:
             if self.perceive_depth
             else np.zeros((18, 32), dtype=np.float32)
         )
+        self.last_depth_input = depth.copy()
         if not self.depth_history:
             for history, term in zip(self.histories, terms, strict=True):
                 history.extend(term.copy() for _ in range(HISTORY_LENGTH))

@@ -1,0 +1,42 @@
+schema_version: longship.rl.deploy.v1
+name: hiking_g1
+backend: instinctlab
+target: unitree_g1_29dof
+
+# The policy, observation ordering, depth preprocessing, PD gains and model
+# artifacts remain owned by the same profile used by Sim2Sim.
+control_profile: src/longship/rl/sim2sim/profiles/instinctlab.yaml
+
+dds:
+  # Override at launch if the robot-facing NIC has a different stable name.
+  interface: enp5s0
+  domain_id: 0
+
+runtime:
+  provider: cpu
+  input_timeout_s: 0.25
+  startup_timeout_s: 15.0
+  teleop_endpoint: tcp://127.0.0.1:5560
+
+visualization:
+  enabled: true
+  # Keep the unauthenticated debug UI local. Forward port 8080 over SSH/Codex.
+  bind_host: 127.0.0.1
+  port: 8080
+  frame_endpoint: tcp://127.0.0.1:5570
+  fps: 10
+
+sensors:
+  - name: depth_camera
+    type: realsense_depth_dds
+    required: true
+    config:
+      # Baseline D435i from the referenced HoloSoma physical deployment.
+      serial: "346522071778"
+      expected_model: D435I
+      raw_width: 848
+      raw_height: 480
+      output_width: 480
+      output_height: 270
+      fps: 30
+      warmup_frames: 15
