@@ -118,11 +118,15 @@ Current upstream snapshot status:
 - Hiking in the Wild: the released parkour and stand depth encoders/actors are
   registered under the InstinctLab integration; heavyweight ONNX files stay
   ignored by Git.
+- Perceptive Humanoid Parkour (PHP): the released 29-DoF student policy, depth
+  backbone, official obstacle scene, ONNX metadata, and browser-controller
+  observation contract are registered. The public snapshot does not contain
+  the expert/student training implementation.
 
 The user-facing one-click entry is `scripts/sim2sim/run_hiking.sh`;
 `run_instinctlab.sh` remains as a compatibility alias for the integration name.
 
-Artifact readiness and launch readiness are deliberately separate. All three
+Artifact readiness and launch readiness are deliberately separate. All four
 integrations now share one Longship-owned MuJoCo simulator process and Unitree
 SDK2 DDS on domain 0, bound to loopback `lo`:
 
@@ -131,8 +135,8 @@ MuJoCo --rt/lowstate---------------> policy --rt/lowcmd--> MuJoCo
         --rt/secondary_imu (SONIC)-->
 ```
 
-The simulator executable, G1 scene, physics loop, state publisher, command
-subscriber, and joint order are identical for HoloSoma, SONIC, and Hiking.
+The simulator executable, physics loop, state publisher, command subscriber,
+and hardware joint order are shared by HoloSoma, SONIC, Hiking, and PHP.
 SONIC's planner, encoder and decoder use the shared Python ONNX Runtime engine.
 `provider: auto` selects CUDA when available and otherwise uses CPU, so CUDA and
 TensorRT are not launch requirements.
@@ -144,13 +148,14 @@ The simulator executable and transport remain shared; physical parameters are
 injected by the backend profile. HoloSoma owns explicit initialization
 values and reads runtime gains from ONNX metadata; SONIC's Python pipeline owns
 the gains, default pose, action scale and joint mapping ported from its model;
-Hiking resolves pose, action scale, and gains
-from each checkpoint's `params/env.yaml`. Every adapter sends the resolved
+Hiking resolves pose, action scale, and gains from each checkpoint's
+`params/env.yaml`; PHP reads the corresponding values and policy joint order
+from ONNX metadata. Every adapter sends the resolved
 `q/dq/tau/kp/kd` in `rt/lowcmd`.
 
 Before the first complete finite `LowCmd`, MuJoCo freezes the reset state while
 continuing to publish `LowState`; it does not apply a shared fallback pose or
-PD controller. Hiking enables the optional depth sensor and publishes it on
+PD controller. Hiking and PHP enable the optional depth sensor and publish it on
 `rt/camera/depth`. Only the policy-side adapter and profile change. HoloSoma is run through
 a Longship Unitree SDK2 adapter because its native FAR C++ DDS binding is not
 wire-compatible with the platform's Python SDK participant. The policy and
@@ -168,6 +173,10 @@ keyboard --ZMQ--> policy adapter --rt/lowcmd--> Longship MuJoCo
 Press `i` to interpolate the robot to the policy's initial pose over the duration
 declared by its profile, then `]` to enable inference. HoloSoma accepts
 `W/S/A/D` linear commands and `Q/E` yaw.
+PHP uses the released 15-way discrete command bank: `W` moves forward, `Q/E`
+select diagonal left/right, `A/D` select left/right, `S` stops, and `Y` toggles
+the low/high-speed bank. Its policy runs at 50 Hz with the previous action and a
+seven-step-delayed 32-D depth latent; it does not stack proprioceptive frames.
 SONIC does not consume HoloSoma-style velocity commands. `]` seeds a measured
 one-frame tracking reference and enables the Python ONNX policy without starting
 planner playback. The first SONIC motion key starts its target-velocity planner;
@@ -244,6 +253,7 @@ python -m longship.rl.sim2sim.dds_probe --interface lo --domain-id 0
 longship-rl-sim2sim commands holosoma --python "$CONDA_PREFIX/bin/python"
 longship-rl-sim2sim commands sonic --python "$CONDA_PREFIX/bin/python"
 longship-rl-sim2sim commands instinctlab --python "$CONDA_PREFIX/bin/python"
+longship-rl-sim2sim commands php --python "$CONDA_PREFIX/bin/python"
 ```
 
 Each `commands` invocation prints three terminals: simulator, controller, and
@@ -257,6 +267,7 @@ launchers that start and clean up all three processes automatically:
 ./scripts/sim2sim/run_holosoma.sh
 ./scripts/sim2sim/run_sonic.sh
 ./scripts/sim2sim/run_instinctlab.sh
+./scripts/sim2sim/run_php.sh
 ```
 
 They prefer the active compatible Conda environment, then discover the

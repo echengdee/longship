@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="Interactive MuJoCo Demo">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interactive Demo | Perceptive Humanoid Parkour</title>
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css?v=obstacle-warning-2">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  <script defer src="./static/js/obstacle-warning.js"></script>
+  <script>
+    (function () {
+      const isMobile = window.matchMedia("(pointer: coarse)").matches || window.innerWidth <= 900;
+      if (isMobile && !window.location.pathname.endsWith("/demo-mobile.html")) {
+        window.location.replace("./demo-mobile.html");
+      }
+    })();
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      overflow: hidden;
+      background: #0f172a;
+    }
+    .demo-glass {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+  </style>
+</head>
+
+<body>
+  <section class="section interactive-demo-section" style="background-color: #0f172a; min-height: 100vh; padding: 0;">
+    <div class="demo-display-container" style="height: 100vh; width: 100vw; position: relative; overflow: hidden;">
+      <iframe
+        id="demoFrame"
+        src="./mujoco_wasm/dist-desktop/index.html"
+        loading="lazy"
+        style="width: 100%; height: 100%; border: none;"
+        title="PHP MuJoCo Web Demo">
+        Your browser does not support iframes.
+      </iframe>
+
+      <div style="position: absolute; left: 50%; top: 6px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; width: calc(100% - 32px); max-width: 1200px;">
+        <div class="demo-glass obstacle-warning" data-obstacle-warning style="flex: 1 1 auto; min-width: 0; padding: 0.8rem 1.2rem; border-radius: 999px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22); background: rgba(255, 243, 205, 0.96); border: 1px solid #e6c84c;">
+          <div style="font-size: 1.5rem; line-height: 1.5; color: #0f172a; text-align: center; white-space: normal;">
+            💡 <strong>Hold <kbd style="background: #fff9e6; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: bold; border: 1px solid #e6c84c;">W</kbd> until you land.</strong>
+          </div>
+        </div>
+        <button type="button" class="demo-glass" style="border-radius: 999px; padding: 0.95rem 1.6rem; font-size: 1.35rem; font-weight: 700; color: #0f172a; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22); border: 1px solid rgba(255, 255, 255, 0.5); cursor: pointer;" onclick="triggerDemoReload();">
+          Reset
+        </button>
+      </div>
+
+      <div class="demo-glass" style="position: absolute; right: 16px; bottom: 16px; padding: 1rem 1.25rem; border-radius: 14px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2); max-width: 450px;">
+        <h3 class="title is-5" style="margin-bottom: 0.6rem; color: #333;">🎮 How to Play</h3>
+        <div style="font-size: 1.2rem; line-height: 1.5; color: #444;">
+          <div style="font-weight: 700; margin-bottom: 0.5rem;">Controls</div>
+          <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.45rem 0.8rem; align-items: center;">
+            <kbd style="background: #f0f0f0; padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: bold; justify-self: start;">W</kbd>
+            <span>Move forward</span>
+            <kbd style="background: #f0f0f0; padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: bold; justify-self: start;">A</kbd>
+            <span>Turn left</span>
+            <kbd style="background: #f0f0f0; padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: bold; justify-self: start;">D</kbd>
+            <span>Turn right</span>
+            <kbd style="background: #f0f0f0; padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: bold; justify-self: start;">Climb</kbd>
+            <span>Autonomous when pressing <kbd style="background: #f0f0f0; padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: bold; justify-self: start;">W</kbd></span>
+            <kbd style="background: #f0f0f0; padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: bold; justify-self: start;">Y</kbd>
+            <span>Toggle speed mode</span>
+            <kbd style="background: #f0f0f0; padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: bold; justify-self: start;">SPACE</kbd>
+            <span>Pause</span>
+            <kbd style="background: #f0f0f0; padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: bold; justify-self: start;">BACKSPACE</kbd>
+            <span>Reset run</span>
+          </div>
+        </div>
+      </div>
+
+      <a class="button is-light is-rounded" href="./index.html" style="position: absolute; left: 16px; top: 16px;">← Back to main page</a>
+    </div>
+  </section>
+
+  <script>
+    function triggerDemoReload() {
+      const frame = document.getElementById('demoFrame');
+      if (!frame || !frame.contentWindow) {
+        return;
+      }
+      const frameDoc = frame.contentDocument || frame.contentWindow.document;
+      if (frameDoc) {
+        const buttons = Array.from(frameDoc.querySelectorAll('button'));
+        const reloadButton = buttons.find((btn) => btn.textContent && btn.textContent.trim() === 'Reload');
+        if (reloadButton) {
+          reloadButton.click();
+          return;
+        }
+      }
+      const down = new KeyboardEvent('keydown', {
+        key: 'l',
+        code: 'KeyL',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      const up = new KeyboardEvent('keyup', {
+        key: 'l',
+        code: 'KeyL',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      frame.contentWindow.dispatchEvent(down);
+      frame.contentWindow.dispatchEvent(up);
+    }
+  </script>
+</body>
+</html>

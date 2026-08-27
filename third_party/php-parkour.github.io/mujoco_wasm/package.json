@@ -1,0 +1,39 @@
+{
+  "name": "mujoco_wasm",
+  "version": "3.3.8",
+  "description": "Run MuJoCo simulations in browser",
+  "main": "src/main.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "build": "esbuild ./src/main.js --bundle --sourcemap --format=esm --outdir=./build --platform=node",
+    "build:web": "vite build",
+    "build:web:desktop": "VITE_DEPTH_PREVIEW_SCALE=4 VITE_GUI_MODE=open vite build --outDir dist-desktop",
+    "build:web:mobile": "VITE_DEPTH_PREVIEW_SCALE=1 VITE_GUI_MODE=hide vite build --outDir dist-mobile"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zalo/mujoco_wasm.git"
+  },
+  "keywords": [
+    "mujoco",
+    "wasm"
+  ],
+  "author": "Sergei Surovtsev and Johnathon Selstad",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zalo/mujoco_wasm/issues"
+  },
+  "homepage": "https://github.com/zalo/mujoco_wasm#readme",
+  "dependencies": {
+    "esbuild": "^0.25.12",
+    "mujoco-js": "^0.0.7",
+    "onnxruntime-web": "^1.21.1",
+    "three": "^0.181.0"
+  },
+  "devDependencies": {
+    "vite": "^6.2.2"
+  }
+}

@@ -56,6 +56,14 @@ CAPABILITIES = {
             "S/A/D: unsupported by the released parkour policy",
         ),
     ),
+    "php": TeleopCapabilities(
+        frozenset("i]wasdqey"),
+        (
+            "W: forward | Q/E: diagonal left/right | A/D: left/right",
+            "S: stop command",
+            "Y: toggle the released low/high-speed command bank",
+        ),
+    ),
 }
 
 

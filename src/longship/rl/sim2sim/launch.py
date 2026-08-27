@@ -65,7 +65,15 @@ def _simulator(root: Path, python: str, profile: ControlProfile) -> ProcessSpec:
     if profile.simulator.reset_q is not None:
         argv += ("--reset-q",) + tuple(str(value) for value in profile.simulator.reset_q)
     if contract.depth_topic:
-        argv += ("--depth",)
+        argv += (
+            "--depth",
+            "--depth-camera-pos",
+            *(str(value) for value in profile.simulator.depth_camera_pos),
+            "--depth-camera-quat",
+            *(str(value) for value in profile.simulator.depth_camera_quat),
+            "--depth-camera-fovy",
+            str(profile.simulator.depth_camera_fovy_deg),
+        )
     pythonpath = (
         f"{root / 'src'}:"
         f"{root / 'third_party/GR00T-WholeBodyControl/external_dependencies/unitree_sdk2_python'}"
@@ -222,10 +230,52 @@ def _instinctlab(root: Path, python: str) -> BackendLaunch:
     )
 
 
+def _php(root: Path, python: str, profile_path: Path | None = None) -> BackendLaunch:
+    profile_path = profile_path or bundled_profile_path("php")
+    profile = load_control_profile(profile_path, "php")
+    contract = profile.dds
+    pythonpath = (
+        f"{root / 'src'}:"
+        f"{root / 'third_party/GR00T-WholeBodyControl/external_dependencies/unitree_sdk2_python'}"
+    )
+    return BackendLaunch(
+        backend="php",
+        contract=contract,
+        simulator=_simulator(root, python, profile),
+        controller=ProcessSpec(
+            "controller",
+            root,
+            (
+                python,
+                str(root / "src/longship/rl/sim2sim/adapters/php_dds.py"),
+                "--root",
+                str(root),
+                "--profile",
+                str(profile_path),
+                "--provider",
+                str(profile.policy_options.get("provider", "auto")),
+                "--interface",
+                contract.interface,
+                "--domain-id",
+                str(contract.domain_id),
+                "--teleop-endpoint",
+                DEFAULT_ENDPOINT,
+            ),
+            environment=(("PYTHONPATH", pythonpath),),
+        ),
+        teleop=_teleop(root, python, "php"),
+        notes=(
+            "PHP student and depth backbone execute through Python ONNX Runtime.",
+            "The released model consumes a 15-way discrete command and delayed 32-D depth latent.",
+        ),
+    )
+
+
 _BUILDERS: Mapping[str, object] = {
     "holosoma": _holosoma,
     "sonic": _sonic,
     "instinctlab": _instinctlab,
+    "php": _php,
 }
 
 

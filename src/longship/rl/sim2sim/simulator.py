@@ -416,9 +416,9 @@ def run(args: argparse.Namespace, contract: DdsContract) -> None:
     if args.depth:
         torso.add_camera(
             name="longship_depth",
-            pos=(0.0488, 0.01, 0.4378),
-            quat=(-0.65795401, -0.25558131, 0.25121801, 0.66231731),
-            fovy=58.29,
+            pos=tuple(args.depth_camera_pos),
+            quat=tuple(args.depth_camera_quat),
+            fovy=args.depth_camera_fovy,
         )
     model = spec.compile()
     model.opt.timestep = 1.0 / contract.state_frequency_hz
@@ -652,6 +652,14 @@ def parse_args() -> argparse.Namespace:
         help="0 disables; otherwise stop at this MuJoCo simulation time",
     )
     parser.add_argument("--depth", action="store_true")
+    parser.add_argument("--depth-camera-pos", type=float, nargs=3, default=(0.0488, 0.01, 0.4378))
+    parser.add_argument(
+        "--depth-camera-quat",
+        type=float,
+        nargs=4,
+        default=(-0.65795401, -0.25558131, 0.25121801, 0.66231731),
+    )
+    parser.add_argument("--depth-camera-fovy", type=float, default=58.29)
     parser.add_argument("--viewer", action="store_true", help="open the interactive MuJoCo window")
     parser.add_argument("--gantry", action="store_true", help="start with the virtual gantry enabled")
     parser.add_argument(

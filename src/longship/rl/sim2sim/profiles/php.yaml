@@ -1,0 +1,49 @@
+schema_version: longship.sim2sim-control.v1
+backend: php
+robot: unitree_g1_29dof
+
+dds:
+  type: unitree_sdk2_dds
+  interface: lo
+  domain_id: 0
+  lowstate_topic: rt/lowstate
+  lowcmd_topic: rt/lowcmd
+  secondary_imu_topic: rt/secondary_imu
+  depth_topic: rt/camera/depth
+  state_frequency_hz: 500
+  control_frequency_hz: 50
+  command_frequency_hz: 200
+
+simulator:
+  gantry_enabled: true
+  gantry_length_m: 1.0
+  depth_enabled: true
+  # Reconstructed from bindTrackingTargets() in the released browser demo.
+  depth_camera_pos: [0.01, 0.01, 0.44]
+  depth_camera_quat: [0.69208900, -0.16055116, 0.16967002, -0.68297015]
+  depth_camera_fovy_deg: 58.4
+  scene: third_party/php-parkour.github.io/mujoco_wasm/assets/scenes/g1_with_terrain.xml
+  foot_collision: native
+  gantry_mode: rope
+  # Exact reset pose used by the released browser demo, in Unitree DDS order.
+  reset_q:
+    [0.162997201, -0.0361181423, -0.0214254409, 0.267154634, -0.174296871, 0.212671682,
+     0.282425106, -0.0584460497, -0.556104779, 0.126711249, -0.123827517, -0.190653816,
+     0.000492588617, -0.0195334535, 0.428676069,
+     -0.00628881808, 0.161155701, 0.236345276, 0.980316162, 0.15456377, 0.0774896815, 0.0205286704,
+     -0.128641531, -0.0847690701, -0.255017966, 1.09530210, -0.134532213, 0.0875737667, 0.0601755157]
+
+initialization:
+  duration_s: 1.0
+  source: onnx_metadata
+  artifact: third_party/php-parkour.github.io/mujoco_wasm/public/2026-01-17_09-51-30_student-new-loco-old-skill_student.onnx
+
+policy:
+  parameters:
+    source: onnx_metadata
+    artifact: third_party/php-parkour.github.io/mujoco_wasm/public/2026-01-17_09-51-30_student-new-loco-old-skill_student.onnx
+  runtime: onnxruntime
+  provider: auto
+  depth_backbone: third_party/php-parkour.github.io/mujoco_wasm/public/2026-01-17_09-51-30_student-new-loco-old-skill_depth_backbone.onnx
+  depth_latency_steps: 7
+  note: observation order, joint mapping, PD gains, default pose, and action scale come from the released model and policyController.js.

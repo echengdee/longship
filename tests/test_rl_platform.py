@@ -131,7 +131,7 @@ class RLPlatformTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             launches = [
                 backend_launch(temporary, backend)
-                for backend in ("holosoma", "sonic", "instinctlab")
+                for backend in ("holosoma", "sonic", "instinctlab", "php")
             ]
         self.assertEqual({item.contract.lowstate_topic for item in launches}, {"rt/lowstate"})
         self.assertEqual({item.contract.lowcmd_topic for item in launches}, {"rt/lowcmd"})
@@ -144,19 +144,21 @@ class RLPlatformTests(unittest.TestCase):
     def test_each_backend_has_an_owned_control_profile(self) -> None:
         profiles = {
             backend: load_control_profile(bundled_profile_path(backend), backend)
-            for backend in ("holosoma", "sonic", "instinctlab")
+            for backend in ("holosoma", "sonic", "instinctlab", "php")
         }
         self.assertEqual(profiles["holosoma"].initialization.source, "profile")
         self.assertEqual(profiles["sonic"].initialization.source, "python_pipeline")
         self.assertEqual(profiles["sonic"].policy_options["runtime"], "onnxruntime")
         self.assertEqual(profiles["instinctlab"].initialization.source, "checkpoint")
         self.assertEqual(profiles["instinctlab"].dds.depth_topic, "rt/camera/depth")
+        self.assertEqual(profiles["php"].policy.source, "onnx_metadata")
+        self.assertEqual(profiles["php"].dds.depth_topic, "rt/camera/depth")
 
     def test_all_backends_use_the_longship_mujoco_simulator(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             launches = [
                 backend_launch(temporary, backend)
-                for backend in ("holosoma", "sonic", "instinctlab")
+                for backend in ("holosoma", "sonic", "instinctlab", "php")
             ]
         for launch in launches:
             self.assertIn("longship.rl.sim2sim.simulator", launch.simulator.argv)
@@ -183,6 +185,7 @@ class RLPlatformTests(unittest.TestCase):
         self.assertTrue(set("wasdqe").issubset(CAPABILITIES["holosoma"].keys))
         self.assertIn("=", CAPABILITIES["holosoma"].keys)
         self.assertTrue(set("wasdqe").issubset(CAPABILITIES["sonic"].keys))
+        self.assertTrue(set("wasdqey").issubset(CAPABILITIES["php"].keys))
 
     def test_hiking_exposes_only_upstream_stand_and_parkour_agents(self) -> None:
         command = HikingModeCommand()

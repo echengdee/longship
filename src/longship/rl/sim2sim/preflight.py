@@ -105,4 +105,4 @@ def preflight_backend(root: str | Path, backend: str) -> PreflightResult:
 
 
 def preflight_all(root: str | Path) -> tuple[PreflightResult, ...]:
-    return tuple(preflight_backend(root, name) for name in ("holosoma", "sonic", "instinctlab"))
+    return tuple(preflight_backend(root, name) for name in ("holosoma", "sonic", "instinctlab", "php"))

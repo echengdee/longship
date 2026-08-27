@@ -80,10 +80,19 @@ class SimulatorSettings:
     foot_collision: str
     gantry_mode: str
     reset_q: tuple[float, ...] | None
+    depth_camera_pos: tuple[float, float, float]
+    depth_camera_quat: tuple[float, float, float, float]
+    depth_camera_fovy_deg: float
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, Any]) -> "SimulatorSettings":
         values = dict(values)
+        depth_camera_pos = tuple(float(value) for value in values.pop(
+            "depth_camera_pos", (0.0488, 0.01, 0.4378)
+        ))
+        depth_camera_quat = tuple(float(value) for value in values.pop(
+            "depth_camera_quat", (-0.65795401, -0.25558131, 0.25121801, 0.66231731)
+        ))
         result = cls(
             gantry_enabled=bool(values.pop("gantry_enabled", True)),
             gantry_length_m=float(values.pop("gantry_length_m", 1.0)),
@@ -96,6 +105,9 @@ class SimulatorSettings:
                 if (reset_q := values.pop("reset_q", None)) is None
                 else tuple(float(value) for value in reset_q)
             ),
+            depth_camera_pos=depth_camera_pos,  # type: ignore[arg-type]
+            depth_camera_quat=depth_camera_quat,  # type: ignore[arg-type]
+            depth_camera_fovy_deg=float(values.pop("depth_camera_fovy_deg", 58.29)),
         )
         if values:
             raise ValueError(f"unknown simulator fields: {sorted(values)}")
@@ -107,6 +119,14 @@ class SimulatorSettings:
             raise ValueError("simulator.gantry_mode must be rope or hiking_spotter_v1")
         if result.reset_q is not None and len(result.reset_q) != len(G1_29DOF_JOINTS):
             raise ValueError(f"simulator.reset_q must contain {len(G1_29DOF_JOINTS)} values")
+        if len(result.depth_camera_pos) != 3 or not np.all(np.isfinite(result.depth_camera_pos)):
+            raise ValueError("simulator.depth_camera_pos must contain 3 finite values")
+        if len(result.depth_camera_quat) != 4 or not np.all(np.isfinite(result.depth_camera_quat)):
+            raise ValueError("simulator.depth_camera_quat must contain 4 finite values")
+        if np.linalg.norm(result.depth_camera_quat) <= 1.0e-8:
+            raise ValueError("simulator.depth_camera_quat must be non-zero")
+        if not 0.0 < result.depth_camera_fovy_deg < 180.0:
+            raise ValueError("simulator.depth_camera_fovy_deg must be in (0, 180)")
         return result
 
 

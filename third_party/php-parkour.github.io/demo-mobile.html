@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="Interactive MuJoCo Demo (Mobile Controls)">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Interactive Demo (Mobile) | Perceptive Humanoid Parkour</title>
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/index.css?v=obstacle-warning-2">
+  <script defer src="./static/js/obstacle-warning.js"></script>
+  <script>
+    (function () {
+      const isMobile = window.matchMedia("(pointer: coarse)").matches || window.innerWidth <= 900;
+      if (!isMobile && !window.location.pathname.endsWith("/demo.html")) {
+        window.location.replace("./demo.html");
+      }
+    })();
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      overscroll-behavior: none;
+    }
+    body {
+      overflow: hidden;
+      background: #0f172a;
+      touch-action: none;
+    }
+    .demo-glass {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .mobile-controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 45vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      padding: 0 16px;
+      pointer-events: none;
+    }
+    .control-row {
+      display: flex;
+      gap: 50vw;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .control-stack {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      pointer-events: none;
+    }
+    .control-button {
+      pointer-events: auto;
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f172a;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.25);
+    }
+    .control-button:active {
+      transform: scale(0.97);
+    }
+    .forward-button {
+      width: 84px;
+      height: 84px;
+      border-radius: 20px;
+      font-size: 1.6rem;
+    }
+    .label-pill {
+      position: absolute;
+      left: 16px;
+      top: 14px;
+      padding: 0.7rem 1rem;
+      border-radius: 999px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+      max-width: calc(100vw - 32px);
+      text-align: left;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+
+<body>
+  <section class="section" style="background-color: #0f172a; min-height: 100vh; padding: 0;">
+    <div class="demo-display-container" style="height: 100vh; width: 100vw; position: relative; overflow: hidden;">
+      <iframe
+        id="demoFrame"
+        src="./mujoco_wasm/dist-mobile/index.html"
+        loading="lazy"
+        style="width: 100%; height: 100%; border: none;"
+        title="PHP MuJoCo Web Demo">
+        Your browser does not support iframes.
+      </iframe>
+
+      <div class="demo-glass label-pill obstacle-warning" data-obstacle-warning>
+        💡 Hold <strong>Forward</strong> until you land.
+      </div>
+
+      <div class="mobile-controls">
+        <div class="control-row">
+          <div class="demo-glass control-button forward-button" data-key="w" aria-label="Forward" role="button">▲</div>
+          <div class="control-stack">
+            <div class="demo-glass control-button" data-key="a" aria-label="Turn left" role="button">◀</div>
+            <div class="demo-glass control-button" data-key="d" aria-label="Turn right" role="button">▶</div>
+          </div>
+        </div>
+      </div>
+
+      <a class="button is-light is-rounded" href="./index.html" style="position: absolute; left: 16px; bottom: 16px;">← Back</a>
+    </div>
+  </section>
+
+  <script>
+    const frame = document.getElementById("demoFrame");
+
+    function sendKey(type, key) {
+      if (!frame || !frame.contentWindow) {
+        return;
+      }
+      const event = new KeyboardEvent(type, {
+        key,
+        code: key.toUpperCase(),
+        bubbles: true,
+        cancelable: true
+      });
+      frame.contentWindow.dispatchEvent(event);
+    }
+
+    function bindButton(button) {
+      const key = button.getAttribute("data-key");
+      if (!key) {
+        return;
+      }
+      const down = (e) => {
+        e.preventDefault();
+        sendKey("keydown", key);
+      };
+      const up = (e) => {
+        e.preventDefault();
+        sendKey("keyup", key);
+      };
+      button.addEventListener("touchstart", down, { passive: false });
+      button.addEventListener("touchend", up, { passive: false });
+      button.addEventListener("touchcancel", up, { passive: false });
+      button.addEventListener("pointerdown", down);
+      button.addEventListener("pointerup", up);
+      button.addEventListener("pointerleave", up);
+    }
+
+    document.querySelectorAll(".control-button").forEach(bindButton);
+  </script>
+</body>
+</html>

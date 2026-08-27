@@ -33,6 +33,7 @@ _STATUS_MARKERS = (
     "Loading encoder model",
     "Initialize Engine",
     "SONIC ONNX READY",
+    "PHP DDS POLICY DONE",
     "tracking policy enabled",
     "policy enabled",
     "Planner enabled",
@@ -141,7 +142,7 @@ def run(root: Path, backend: str, python: str) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("backend", choices=("holosoma", "sonic", "instinctlab"))
+    parser.add_argument("backend", choices=("holosoma", "sonic", "instinctlab", "php"))
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--python", default=sys.executable)
     args = parser.parse_args()
