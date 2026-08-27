@@ -45,8 +45,12 @@ training package. The repository root does not create a second experiment hierar
 ```text
 outputs/                # ignored generated runs and resolved configs
 environments/           # Longship-owned simulator runtime profiles
-third_party/            # pinned upstream source/model assets; not copied into submodule
+third_party/            # training and Sim2Sim upstream assets
 ```
+
+The submodule carries only the LFS-managed Hiking artifacts required by its
+physical deployment profile. Training sources, MuJoCo assets, and all other
+upstream trees remain outside the submodule.
 
 Experiments stay with the selected RL integration. A backend adapter translates
 that experiment into Longship's validated configuration boundary rather than
