@@ -36,6 +36,11 @@ from .visual_policy import (
     NomadVisualGoalDistancePolicy,
     NomadVisualPolicyConfig,
 )
+from .ros2_navigation_mode import (
+    NomadRos2NavigationModeConfig,
+    NomadRos2NavigationModeDriver,
+    NomadRos2NavigationModeDriverFactory,
+)
 
 __all__ = [
     "NomadTopomapMapConfig",
@@ -56,6 +61,9 @@ __all__ = [
     "NomadVisualGoalDistancePolicy",
     "NomadVisualGoalTrajectoryPolicy",
     "NomadVisualPolicyConfig",
+    "NomadRos2NavigationModeConfig",
+    "NomadRos2NavigationModeDriver",
+    "NomadRos2NavigationModeDriverFactory",
     "create_nomad_topomap_engine",
     "load_nomad_topomap",
     "resolve_visual_target_goal",

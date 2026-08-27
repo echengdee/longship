@@ -9,13 +9,45 @@ from .base import (
     StopResult,
 )
 from .mock import MockNavigation
+from .mode import (
+    NavigationModeDriver,
+    NavigationModeDriverFactory,
+    NavigationModeRuntime,
+    NavigationModeRuntimeError,
+    NavigationModeRuntimeFactory,
+    NavigationModeState,
+    NavigationModeStatus,
+)
+from .operation import (
+    NavigationHarnessFactory,
+    NavigationOperation,
+    NavigationOperationStarter,
+    NavigationSession,
+    NavigationSessionBuilder,
+    NavigationSessionFactory,
+    StreamBackedNavigationPort,
+)
 
 __all__ = [
     "MockNavigation",
     "NavigationAuthority",
+    "NavigationHarnessFactory",
+    "NavigationModeDriver",
+    "NavigationModeDriverFactory",
+    "NavigationModeRuntime",
+    "NavigationModeRuntimeError",
+    "NavigationModeRuntimeFactory",
+    "NavigationModeState",
+    "NavigationModeStatus",
+    "NavigationOperation",
+    "NavigationOperationStarter",
     "NavigationPort",
     "NavigationRequest",
     "NavigationResult",
     "NavigationStopRequest",
+    "NavigationSession",
+    "NavigationSessionBuilder",
+    "NavigationSessionFactory",
     "StopResult",
+    "StreamBackedNavigationPort",
 ]

@@ -17,6 +17,19 @@ from longship.navigation.local_trajectory_engine import (
     LocalTrajectoryStream,
     RouteBoundLocalTrajectoryEngine,
 )
+from longship.navigation import (
+    NavigationHarnessFactory,
+    NavigationModeDriver,
+    NavigationModeDriverFactory,
+    NavigationModeRuntime,
+    NavigationModeRuntimeFactory,
+    NavigationOperation,
+    NavigationOperationStarter,
+    NavigationSession,
+    NavigationSessionBuilder,
+    NavigationSessionFactory,
+    StreamBackedNavigationPort,
+)
 from longship.navigation.map_engine.interface import MapEngine
 from longship.navigation.mission_engine.interface import NavigationMissionEngine
 from longship.navigation.planning_engine.interface import PlanningEngine
@@ -48,6 +61,17 @@ class ContractImportTests(unittest.TestCase):
         self.assertIsNotNone(RouteExecutionPort)
         self.assertIsNotNone(LocalTrajectoryEngine)
         self.assertIsNotNone(LocalTrajectoryStream)
+        self.assertIsNotNone(NavigationOperation)
+        self.assertIsNotNone(NavigationOperationStarter)
+        self.assertIsNotNone(NavigationHarnessFactory)
+        self.assertIsNotNone(NavigationModeDriver)
+        self.assertIsNotNone(NavigationModeDriverFactory)
+        self.assertIsNotNone(NavigationModeRuntime)
+        self.assertIsNotNone(NavigationModeRuntimeFactory)
+        self.assertIsNotNone(NavigationSession)
+        self.assertIsNotNone(NavigationSessionBuilder)
+        self.assertIsNotNone(NavigationSessionFactory)
+        self.assertIsNotNone(StreamBackedNavigationPort)
         self.assertIsNotNone(LocalizationObservationProducer)
         self.assertIsNotNone(LocalizationObservationProducerState)
         self.assertIsNotNone(LocalizationObservationProducerStatus)
